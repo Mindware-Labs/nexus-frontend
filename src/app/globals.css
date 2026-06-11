@@ -132,6 +132,8 @@
   /* fill backwards: tras terminar, el transform vuelve a manos de motion
      (layout animations) sin que el fill del keyframe lo pise */
   --animate-bubble-in: bubble-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+  /* Streaming palabra a palabra en CSS puro (primer ciclo del hero) */
+  --animate-word-in: word-in 0.3s cubic-bezier(0.22, 1, 0.36, 1) backwards;
 
   @keyframes float {
     0%,
@@ -348,6 +350,18 @@
     to {
       opacity: 1;
       transform: translateY(0) scale(1);
+    }
+  }
+  @keyframes word-in {
+    from {
+      opacity: 0;
+      transform: translateY(3px);
+      filter: blur(2px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+      filter: blur(0);
     }
   }
   /* Cometa: cruza una sola vez por ciclo a lo largo de su propio eje

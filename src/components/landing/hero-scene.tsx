@@ -18,7 +18,7 @@ import {
   Sparkles,
   Zap,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 
 /**
  * Escena hero: el producto en acción. Un widget Nexus reproduce en loop el
@@ -37,11 +37,13 @@ const spring = { type: "spring", stiffness: 260, damping: 24 } as const;
    prerenderizada en el HTML (visible desde el primer pintado, sin esperar
    al JS) y este schedule solo la continúa. Los ciclos siguientes
    reproducen el flujo completo con el LOOP_SCHEDULE. */
+/* El streaming CSS del primer bot termina ~2.4s; la captura de datos
+   entra justo después para mantener el ritmo conversacional. */
 const FIRST_SCHEDULE: { step: number; at: number }[] = [
-  { step: 4, at: 2200 },
-  { step: 5, at: 3400 },
-  { step: 6, at: 4800 },
-  { step: 0, at: 10600 },
+  { step: 4, at: 3000 },
+  { step: 5, at: 4200 },
+  { step: 6, at: 5600 },
+  { step: 0, at: 11600 },
 ];
 
 const LOOP_SCHEDULE: { step: number; at: number }[] = [
@@ -75,24 +77,54 @@ function StreamText({ text }: { text: string }) {
         visible: { transition: { staggerChildren: 0.055 } },
       }}
     >
+      {/* El espacio va FUERA del span inline-block: dentro se recorta
+          por el colapsado de whitespace y las palabras salen pegadas */}
       {text.split(" ").map((word, i) => (
-        <motion.span
-          key={i}
-          variants={{
-            hidden: { opacity: 0, y: 3, filter: "blur(2px)" },
-            visible: {
-              opacity: 1,
-              y: 0,
-              filter: "blur(0px)",
-              transition: { duration: 0.2, ease },
-            },
-          }}
-          className="inline-block"
-        >
-          {word}{" "}
-        </motion.span>
+        <Fragment key={i}>
+          <motion.span
+            variants={{
+              hidden: { opacity: 0, y: 3, filter: "blur(2px)" },
+              visible: {
+                opacity: 1,
+                y: 0,
+                filter: "blur(0px)",
+                transition: { duration: 0.2, ease },
+              },
+            }}
+            className="inline-block"
+          >
+            {word}
+          </motion.span>{" "}
+        </Fragment>
       ))}
     </motion.span>
+  );
+}
+
+/* Streaming palabra a palabra en CSS puro: corre desde el primer pintado
+   del HTML, sin esperar la hidratación. Mismo lenguaje visual que
+   StreamText, que toma el relevo en los ciclos siguientes. */
+function CssStreamText({
+  text,
+  startDelay,
+}: {
+  text: string;
+  startDelay: number;
+}) {
+  return (
+    <span>
+      {/* Espacio fuera del inline-block (ver nota en StreamText) */}
+      {text.split(" ").map((word, i) => (
+        <Fragment key={i}>
+          <span
+            style={{ animationDelay: `${startDelay + i * 0.055}s` }}
+            className="inline-block motion-safe:animate-word-in"
+          >
+            {word}
+          </span>{" "}
+        </Fragment>
+      ))}
+    </span>
   );
 }
 
@@ -108,21 +140,30 @@ function BotAvatar() {
 function Bubble({
   from,
   delay = 0,
+  exitDelay = 0,
   children,
 }: {
   from: "visitor" | "bot";
   delay?: number;
+  exitDelay?: number;
   children: React.ReactNode;
 }) {
   /* Entrada en CSS (corre en cada mount, incluso antes de hidratar);
-     motion conserva layout y exit para el reinicio del ciclo. */
+     motion conserva layout y exit. Al reiniciar el ciclo, las burbujas
+     se despiden en cascada (exitDelay) en vez de desvanecerse en bloque. */
   const style = delay ? { animationDelay: `${delay}s` } : undefined;
+  const exit = {
+    opacity: 0,
+    y: -8,
+    scale: 0.98,
+    transition: { duration: 0.2, delay: exitDelay },
+  };
   if (from === "bot") {
     return (
       <motion.div
         layout
         initial={false}
-        exit={{ opacity: 0, y: -8, scale: 0.98, transition: { duration: 0.2 } }}
+        exit={exit}
         transition={spring}
         style={style}
         className="flex max-w-[88%] shrink-0 items-end gap-2 self-start motion-safe:animate-bubble-in"
@@ -142,7 +183,7 @@ function Bubble({
     <motion.div
       layout
       initial={false}
-      exit={{ opacity: 0, y: -8, scale: 0.98, transition: { duration: 0.2 } }}
+      exit={exit}
       transition={spring}
       style={style}
       className="relative max-w-[85%] shrink-0 overflow-hidden rounded-2xl rounded-br-md bg-gradient-to-br from-nexus-purple via-nexus-purple to-nexus-deep px-4 py-2.5 text-[13px] leading-relaxed text-white shadow-[0_16px_36px_-18px_rgba(61,26,78,0.8),0_4px_14px_rgba(61,26,78,0.28)] ring-1 ring-white/10 self-end motion-safe:animate-bubble-in"
@@ -189,8 +230,8 @@ function TypingDots() {
 function SignalRail({ step }: { step: number }) {
   return (
     <div
-      style={{ transform: "translateZ(54px)", animationDelay: "0.5s" }}
-      className="absolute -right-5 top-24 z-20 hidden w-32 flex-col gap-2 sm:flex motion-safe:animate-enter-fade"
+      style={{ transform: "translateZ(64px)", transformStyle: "preserve-3d" }}
+      className="absolute -right-36 top-24 z-20 hidden w-[8.5rem] flex-col gap-2.5 sm:flex"
     >
       {SIGNALS.map((signal, index) => {
         const Icon = signal.icon;
@@ -199,13 +240,22 @@ function SignalRail({ step }: { step: number }) {
         return (
           <motion.div
             key={signal.label}
+            initial={{ opacity: 0, x: 24, rotateY: 15, scale: 0.9 }}
             animate={{
-              opacity: active ? 1 : 0.54,
-              x: active ? 0 : 8,
-              scale: active ? 1 : 0.96,
+              opacity: active ? 1 : 0.45,
+              x: active ? 0 : 16,
+              scale: active ? 1.04 : 0.94,
+              rotateY: active ? 0 : 10,
+              filter: active ? "blur(0px)" : "blur(0.5px)",
             }}
-            transition={{ ...spring, delay: index * 0.05 }}
-            className="relative overflow-hidden rounded-2xl border border-white/12 bg-nexus-deep/80 p-2.5 text-white shadow-[0_16px_40px_-26px_rgba(0,0,0,0.85)] backdrop-blur-xl"
+            transition={
+              active
+                ? { type: "spring", stiffness: 400, damping: 22, mass: 0.8 }
+                : { type: "spring", stiffness: 200, damping: 24, mass: 1, delay: 0.3 + index * 0.1 }
+            }
+            className={`relative overflow-hidden rounded-2xl border bg-nexus-deep/80 p-2.5 text-white shadow-[0_16px_40px_-26px_rgba(0,0,0,0.85)] backdrop-blur-xl transition-colors duration-300 ${
+              active ? "border-nexus-lavender/40" : "border-white/12"
+            }`}
           >
             {active && (
               <span
@@ -400,6 +450,7 @@ export function HeroScene() {
                     key={`v1-${cycle}`}
                     from="visitor"
                     delay={cycle === 0 ? 0.45 : 0}
+                    exitDelay={0}
                   >
                     Hola, ¿hacen envíos a regiones?
                   </Bubble>
@@ -410,23 +461,27 @@ export function HeroScene() {
                     key={`b1-${cycle}`}
                     from="bot"
                     delay={cycle === 0 ? 0.95 : 0}
+                    exitDelay={0.06}
                   >
                     {cycle === 0 ? (
-                      /* Texto plano en el primer ciclo: visible en el HTML
-                         del servidor sin esperar la hidratación */
-                      <>¡Sí! Llegamos a todo el país en 24–48 h 🚚 ¿Quieres que un asesor te contacte?</>
+                      /* Primer ciclo: streaming palabra a palabra en CSS,
+                         visible en el HTML del servidor sin esperar al JS */
+                      <CssStreamText
+                        text="¡Sí! Llegamos a todo el país en 24–48 h 🚚 ¿Quieres que un asesor te contacte?"
+                        startDelay={1.3}
+                      />
                     ) : (
                       <StreamText text="¡Sí! Llegamos a todo el país en 24–48 h 🚚 ¿Quieres que un asesor te contacte?" />
                     )}
                   </Bubble>
                 )}
                 {step >= 4 && (
-                  <Bubble key={`v2-${cycle}`} from="visitor">
+                  <Bubble key={`v2-${cycle}`} from="visitor" exitDelay={0.12}>
                     Genial. Soy Ana — ana@empresa.com
                   </Bubble>
                 )}
                 {step >= 5 && (
-                  <Bubble key={`b2-${cycle}`} from="bot">
+                  <Bubble key={`b2-${cycle}`} from="bot" exitDelay={0.18}>
                     <StreamText text="¡Listo, Ana! Te escribimos hoy mismo. ✅" />
                   </Bubble>
                 )}
@@ -468,7 +523,7 @@ export function HeroScene() {
                 opacity: 0,
                 y: 10,
                 scale: 0.96,
-                transition: { duration: 0.25 },
+                transition: { duration: 0.25, delay: 0.22 },
               }}
               transition={{ type: "spring", stiffness: 230, damping: 20 }}
               className="absolute -bottom-12 -right-2 z-20 w-[17.5rem] rounded-[1.35rem] bg-gradient-to-r from-nexus-mint/55 via-white/20 to-nexus-lavender/35 p-px shadow-[0_28px_70px_-24px_rgba(0,0,0,0.82),0_0_52px_-12px_rgba(52,211,153,0.32)] sm:-right-8"
