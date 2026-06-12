@@ -4,6 +4,7 @@ import { motion, useScroll, useTransform } from "motion/react";
 import {
   Activity,
   ArrowRight,
+  Check,
   ChevronDown,
   PlayCircle,
   ShieldCheck,
@@ -12,54 +13,43 @@ import {
 import { useRef } from "react";
 import { HeroScene } from "./hero-scene";
 
-/* Posiciones deterministas (evita mismatch de hidratación) */
+/* Posiciones deterministas (evita mismatch de hidratación).
+   Densidad recortada: menos capas animadas simultáneas = scroll fluido. */
 const PARTICLES = [
   { left: "6%", size: 3, delay: 0, duration: 15 },
-  { left: "14%", size: 2, delay: 4, duration: 19 },
   { left: "24%", size: 2, delay: 9, duration: 14 },
-  { left: "33%", size: 3, delay: 2, duration: 21 },
   { left: "45%", size: 2, delay: 12, duration: 16 },
-  { left: "55%", size: 2, delay: 6, duration: 18 },
   { left: "64%", size: 3, delay: 1, duration: 15 },
-  { left: "73%", size: 2, delay: 10, duration: 20 },
   { left: "82%", size: 2, delay: 5, duration: 14 },
   { left: "91%", size: 3, delay: 8, duration: 17 },
 ];
 
 const ENERGY_BEAMS = [
-  { top: "18%", rotate: "-10deg", delay: "0s", duration: "7s" },
-  { top: "34%", rotate: "7deg", delay: "1.6s", duration: "8.2s" },
-  { top: "58%", rotate: "-5deg", delay: "3.1s", duration: "7.6s" },
-  { top: "76%", rotate: "11deg", delay: "4.4s", duration: "9s" },
+  { top: "22%", rotate: "-8deg", delay: "0s", duration: "7.6s" },
+  { top: "62%", rotate: "6deg", delay: "3.1s", duration: "8.4s" },
 ];
 
 const SPARKS = [
   { left: "12%", top: "24%", delay: "0s" },
-  { left: "29%", top: "68%", delay: "2.4s" },
   { left: "48%", top: "18%", delay: "1.1s" },
-  { left: "70%", top: "30%", delay: "3.2s" },
   { left: "86%", top: "64%", delay: "1.8s" },
 ];
 
 /* Estrellas fijas que titilan (posiciones deterministas) */
 const STARS = [
   { left: "8%", top: "14%", size: 2, delay: "0s", duration: "4.2s" },
-  { left: "21%", top: "38%", size: 1.5, delay: "1.4s", duration: "5.1s" },
   { left: "34%", top: "10%", size: 2, delay: "2.8s", duration: "3.8s" },
   { left: "44%", top: "44%", size: 1.5, delay: "0.9s", duration: "5.6s" },
   { left: "58%", top: "8%", size: 2, delay: "3.6s", duration: "4.6s" },
-  { left: "67%", top: "52%", size: 1.5, delay: "1.9s", duration: "4s" },
   { left: "78%", top: "20%", size: 2, delay: "0.5s", duration: "5.4s" },
   { left: "90%", top: "42%", size: 1.5, delay: "2.2s", duration: "4.4s" },
   { left: "15%", top: "78%", size: 1.5, delay: "3.1s", duration: "5s" },
-  { left: "93%", top: "74%", size: 2, delay: "1.2s", duration: "4.8s" },
 ];
 
 /* Cometas: destellos diagonales ocasionales, desfasados entre sí */
 const COMETS = [
-  { top: "16%", left: "-4%", rotate: "16deg", delay: "2s", duration: "13s" },
-  { top: "48%", left: "-6%", rotate: "-12deg", delay: "8.5s", duration: "17s" },
-  { top: "72%", left: "-5%", rotate: "9deg", delay: "14s", duration: "21s" },
+  { top: "16%", left: "-4%", rotate: "16deg", delay: "2s", duration: "15s" },
+  { top: "62%", left: "-6%", rotate: "-10deg", delay: "9s", duration: "19s" },
 ];
 
 const HERO_SIGNALS = [
@@ -94,23 +84,9 @@ export function Hero() {
             backgroundSize: "140% 140%, 130% 130%, 150% 150%",
           }}
         />
-        <div className="absolute -top-32 left-1/4 size-[45rem] -translate-x-1/2 rounded-full bg-[#522566] blur-[160px] opacity-30 motion-safe:animate-drift-1" />
-        <div className="absolute -bottom-40 right-1/4 size-[40rem] rounded-full bg-[#AD74C3] blur-[160px] opacity-30 motion-safe:animate-drift-2" />
-        {/* Tercer orbe menta: deriva lenta, presencia muy sutil */}
-        <div className="absolute right-[6%] top-1/3 size-[26rem] rounded-full bg-[#34D399] blur-[140px] opacity-10 motion-safe:animate-drift-3" />
-
-        {/* Barrido radial tipo radar, muy sutil para dar sensación de sistema vivo */}
-        <div className="absolute left-1/2 top-1/2 size-[72rem] -translate-x-1/2 -translate-y-1/2 rounded-full opacity-30">
-          <div
-            className="absolute inset-0 rounded-full motion-safe:animate-radial-sweep"
-            style={{
-              background:
-                "conic-gradient(from 90deg, transparent 0deg, rgba(173,116,195,0.32) 38deg, transparent 78deg, transparent 360deg)",
-              maskImage:
-                "radial-gradient(circle, transparent 0 18%, black 24%, transparent 64%)",
-            }}
-          />
-        </div>
+        {/* Dos orbes (no tres) con blur moderado: menos memoria de GPU */}
+        <div className="absolute -top-32 left-1/4 size-[36rem] -translate-x-1/2 rounded-full bg-[#522566] blur-[120px] opacity-30 motion-safe:animate-drift-1" />
+        <div className="absolute -bottom-40 right-1/4 size-[32rem] rounded-full bg-[#AD74C3] blur-[120px] opacity-25 motion-safe:animate-drift-2" />
 
         {/* Grid sutil con máscara radial, al estilo plano técnico */}
         <div
@@ -225,9 +201,15 @@ export function Hero() {
               sin esperar la hidratación de JS */}
           <span
             style={{ animationDelay: "0.05s" }}
-            className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-4 py-1.5 text-xs font-medium tracking-wide text-nexus-lavender backdrop-blur-md motion-safe:animate-enter-up"
+            className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/8 px-4 py-1.5 text-xs font-medium tracking-wide text-nexus-lavender motion-safe:animate-enter-up"
           >
-            <span className="size-1.5 rounded-full bg-nexus-mint motion-safe:animate-pulse" />
+            <span className="relative flex size-1.5">
+              <span
+                aria-hidden
+                className="absolute inline-flex size-full rounded-full bg-nexus-mint/60 motion-safe:animate-ping"
+              />
+              <span className="relative inline-flex size-1.5 rounded-full bg-nexus-mint" />
+            </span>
             IA conversacional para tu negocio
           </span>
 
@@ -263,7 +245,7 @@ export function Hero() {
             </a>
             <a
               href="#demo"
-              className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-7 py-3.5 text-sm font-medium text-white backdrop-blur-md transition-[transform,background-color,border-color] duration-200 ease-out hover:border-nexus-lavender/60 hover:bg-white/10 active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-nexus-lavender"
+              className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/8 px-7 py-3.5 text-sm font-medium text-white transition-[transform,background-color,border-color] duration-200 ease-out hover:border-nexus-lavender/60 hover:bg-white/12 active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-nexus-lavender"
             >
               <PlayCircle aria-hidden className="size-4 text-nexus-lavender" />
               Probar la demo en vivo
@@ -271,29 +253,52 @@ export function Hero() {
           </div>
 
           <div
-            style={{ animationDelay: "0.36s" }}
-            className="mt-8 grid w-full max-w-xl gap-3 sm:grid-cols-3 motion-safe:animate-enter-up"
+            style={{ animationDelay: "0.32s" }}
+            className="mt-5 flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 lg:justify-start motion-safe:animate-enter-up"
+          >
+            {["Sin tarjeta de crédito", "En tu web en 5 minutos"].map(
+              (item) => (
+                <span
+                  key={item}
+                  className="inline-flex items-center gap-1.5 text-xs text-white/45"
+                >
+                  <Check
+                    aria-hidden
+                    strokeWidth={3}
+                    className="size-3 text-nexus-mint"
+                  />
+                  {item}
+                </span>
+              ),
+            )}
+          </div>
+
+          <div
+            style={{ animationDelay: "0.38s" }}
+            className="mt-7 grid w-full max-w-xl gap-2.5 sm:grid-cols-3 motion-safe:animate-enter-up"
           >
             {HERO_SIGNALS.map((signal) => (
               <div
                 key={signal.label}
-                className="group relative overflow-hidden rounded-2xl border border-white/10 bg-white/[0.055] p-3.5 text-left backdrop-blur-md"
+                className="group h-full rounded-2xl bg-gradient-to-b from-white/18 via-white/8 to-white/5 p-px"
               >
-                <span
-                  aria-hidden
-                  className="absolute inset-y-0 -left-16 w-16 bg-white/15 blur-xl motion-safe:animate-shimmer"
-                />
-                <div className="flex items-center gap-2">
-                  <span className="grid size-8 shrink-0 place-items-center rounded-xl bg-white/8 text-nexus-lavender ring-1 ring-white/10 transition-transform duration-300 group-hover:scale-110">
-                    <signal.icon className="size-4" />
-                  </span>
-                  <div className="min-w-0">
-                    <p className="truncate text-xs font-semibold text-white">
-                      {signal.label}
-                    </p>
-                    <p className="truncate text-[11px] text-white/45">
-                      {signal.value}
-                    </p>
+                <div className="relative h-full overflow-hidden rounded-[calc(1rem-1px)] bg-nexus-deep/75 p-3.5 text-left">
+                  <span
+                    aria-hidden
+                    className="absolute inset-y-0 -left-16 w-16 bg-white/15 blur-xl motion-safe:animate-shimmer"
+                  />
+                  <div className="flex items-center gap-2">
+                    <span className="grid size-8 shrink-0 place-items-center rounded-xl bg-white/8 text-nexus-lavender ring-1 ring-white/10 transition-transform duration-300 group-hover:scale-110">
+                      <signal.icon className="size-4" />
+                    </span>
+                    <div className="min-w-0">
+                      <p className="truncate text-xs font-semibold text-white">
+                        {signal.label}
+                      </p>
+                      <p className="truncate text-[11px] text-white/45">
+                        {signal.value}
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -320,9 +325,9 @@ export function Hero() {
         href="#como-funciona"
         aria-label="Bajar a Cómo funciona"
         style={{ animationDelay: "0.9s" }}
-        className="absolute bottom-7 left-1/2 -translate-x-1/2 text-white/40 transition-colors hover:text-white motion-safe:animate-enter-fade"
+        className="absolute bottom-6 left-1/2 grid size-10 -translate-x-1/2 place-items-center rounded-full border border-white/15 bg-white/8 text-white/50 transition-[color,border-color] duration-200 hover:border-nexus-lavender/50 hover:text-white motion-safe:animate-enter-fade"
       >
-        <ChevronDown className="size-6 motion-safe:animate-bounce" />
+        <ChevronDown className="size-5 motion-safe:animate-bounce" />
       </a>
     </section>
   );

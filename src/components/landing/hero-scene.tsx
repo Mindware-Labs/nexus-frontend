@@ -169,7 +169,7 @@ function Bubble({
         className="flex max-w-[88%] shrink-0 items-end gap-2 self-start motion-safe:animate-bubble-in"
       >
         <BotAvatar />
-        <div className="relative overflow-hidden rounded-2xl rounded-bl-md border border-white bg-white/95 px-4 py-2.5 text-[13px] leading-relaxed text-nexus-ink shadow-[0_12px_32px_-18px_rgba(61,26,78,0.45),0_2px_8px_rgba(61,26,78,0.08)] backdrop-blur">
+        <div className="relative overflow-hidden rounded-2xl rounded-bl-md border border-white bg-white px-4 py-2.5 text-[13px] leading-relaxed text-nexus-ink shadow-[0_12px_32px_-18px_rgba(61,26,78,0.45),0_2px_8px_rgba(61,26,78,0.08)]">
           <span
             aria-hidden
             className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-nexus-lavender/45 to-transparent"
@@ -192,10 +192,6 @@ function Bubble({
         aria-hidden
         className="absolute inset-0 bg-[radial-gradient(circle_at_18%_0%,rgba(173,116,195,0.38),transparent_55%)]"
       />
-      <span
-        aria-hidden
-        className="absolute inset-y-0 -left-16 w-14 bg-white/20 blur-xl motion-safe:animate-shimmer"
-      />
       {children}
       <span className="ml-2 inline-flex translate-y-0.5">
         <CheckCheck aria-hidden className="size-3.5 text-nexus-mint" />
@@ -214,7 +210,7 @@ function TypingDots() {
       className="flex shrink-0 items-end gap-2 self-start motion-safe:animate-bubble-in"
     >
       <BotAvatar />
-      <div className="flex gap-1.5 rounded-2xl rounded-bl-md border border-white bg-white/95 px-4 py-3 shadow-[0_12px_32px_-18px_rgba(61,26,78,0.45),0_2px_8px_rgba(61,26,78,0.08)] backdrop-blur">
+      <div className="flex gap-1.5 rounded-2xl rounded-bl-md border border-white bg-white px-4 py-3 shadow-[0_12px_32px_-18px_rgba(61,26,78,0.45),0_2px_8px_rgba(61,26,78,0.08)]">
         {[0, 1, 2].map((d) => (
           <span
             key={d}
@@ -246,23 +242,16 @@ function SignalRail({ step }: { step: number }) {
               x: active ? 0 : 16,
               scale: active ? 1.04 : 0.94,
               rotateY: active ? 0 : 10,
-              filter: active ? "blur(0px)" : "blur(0.5px)",
             }}
             transition={
               active
                 ? { type: "spring", stiffness: 400, damping: 22, mass: 0.8 }
                 : { type: "spring", stiffness: 200, damping: 24, mass: 1, delay: 0.3 + index * 0.1 }
             }
-            className={`relative overflow-hidden rounded-2xl border bg-nexus-deep/80 p-2.5 text-white shadow-[0_16px_40px_-26px_rgba(0,0,0,0.85)] backdrop-blur-xl transition-colors duration-300 ${
+            className={`relative overflow-hidden rounded-2xl border bg-nexus-deep/90 p-2.5 text-white shadow-[0_16px_40px_-26px_rgba(0,0,0,0.85)] transition-colors duration-300 ${
               active ? "border-nexus-lavender/40" : "border-white/12"
             }`}
           >
-            {active && (
-              <span
-                aria-hidden
-                className="absolute inset-y-0 -left-12 w-12 bg-white/15 blur-xl motion-safe:animate-shimmer"
-              />
-            )}
             <div className="relative flex items-center gap-2">
               <span className="grid size-7 shrink-0 place-items-center rounded-xl bg-white/8 ring-1 ring-white/10">
                 <Icon
@@ -372,19 +361,19 @@ export function HeroScene() {
         aria-hidden
         className="absolute -inset-10 -z-10 rounded-[3rem] bg-[radial-gradient(circle_at_25%_20%,rgba(255,255,255,0.18),transparent_32%),radial-gradient(circle_at_84%_72%,rgba(52,211,153,0.22),transparent_34%),radial-gradient(circle_at_50%_100%,rgba(173,116,195,0.22),transparent_38%)] blur-2xl"
       />
+      {/* La flotación CSS vive en el wrapper y el tilt de motion en el hijo:
+          en el mismo nodo, la animación CSS pisa el transform inline del
+          tilt y ambos pelean en cada frame. */}
+      <div className="motion-safe:animate-float-slow">
       <motion.div
         style={{ rotateX, rotateY, transformStyle: "preserve-3d" }}
-        className="relative motion-safe:animate-float-slow"
+        className="relative"
       >
         {/* Plano trasero: conocimiento RAG */}
         <div
           style={{ transform: "translateZ(-50px)", animationDelay: "0.25s" }}
-          className="absolute -left-4 -top-10 z-0 inline-flex items-center gap-2 overflow-hidden rounded-full border border-white/14 bg-white/[0.07] px-3.5 py-1.5 text-xs font-medium text-white/62 shadow-[0_18px_42px_-30px_rgba(0,0,0,0.7)] backdrop-blur-md sm:-left-12 motion-safe:animate-enter-fade"
+          className="absolute -left-4 -top-10 z-0 inline-flex items-center gap-2 overflow-hidden rounded-full border border-white/14 bg-white/10 px-3.5 py-1.5 text-xs font-medium text-white/62 shadow-[0_18px_42px_-30px_rgba(0,0,0,0.7)] sm:-left-12 motion-safe:animate-enter-fade"
         >
-          <span
-            aria-hidden
-            className="absolute inset-y-0 -left-12 w-12 bg-white/18 blur-xl motion-safe:animate-shimmer"
-          />
           <Database className="size-3.5 text-nexus-lavender" />
           <span className="relative">Entrenado en tu negocio</span>
         </div>
@@ -393,15 +382,7 @@ export function HeroScene() {
 
         {/* Widget con borde degradado */}
         <div className="relative z-10 rounded-[28px] bg-gradient-to-r from-white/35 via-nexus-lavender/35 to-nexus-mint/45 p-px shadow-[0_34px_80px_-34px_rgba(0,0,0,0.82),0_0_70px_-30px_rgba(173,116,195,0.9)]">
-          <div
-            aria-hidden
-            className="absolute -inset-px rounded-[28px] bg-gradient-to-r from-transparent via-white/25 to-transparent opacity-70 blur-sm motion-safe:animate-shimmer"
-          />
           <div className="relative overflow-hidden rounded-[27px] bg-white">
-            <div
-              aria-hidden
-              className="pointer-events-none absolute inset-0 z-20 bg-[linear-gradient(120deg,transparent_0%,rgba(255,255,255,0.22)_18%,transparent_35%)] opacity-45 motion-safe:animate-shimmer"
-            />
             {/* Header */}
             <div className="relative flex items-center gap-3 overflow-hidden bg-[radial-gradient(circle_at_22%_0%,rgba(173,116,195,0.35),transparent_36%),linear-gradient(180deg,#522566_0%,#3D1A4E_100%)] px-5 py-3.5">
               <div
@@ -528,7 +509,7 @@ export function HeroScene() {
               transition={{ type: "spring", stiffness: 230, damping: 20 }}
               className="absolute -bottom-12 -right-2 z-20 w-[17.5rem] rounded-[1.35rem] bg-gradient-to-r from-nexus-mint/55 via-white/20 to-nexus-lavender/35 p-px shadow-[0_28px_70px_-24px_rgba(0,0,0,0.82),0_0_52px_-12px_rgba(52,211,153,0.32)] sm:-right-8"
             >
-              <div className="relative overflow-hidden rounded-[1.28rem] bg-nexus-deep/95 p-4 backdrop-blur-xl">
+              <div className="relative overflow-hidden rounded-[1.28rem] bg-nexus-deep/95 p-4">
                 <span
                   aria-hidden
                   className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-nexus-mint/80 to-transparent"
@@ -611,6 +592,7 @@ export function HeroScene() {
           />
         </div>
       </motion.div>
+      </div>
 
       {/* Resplandor de apoyo bajo la escena */}
       <div
