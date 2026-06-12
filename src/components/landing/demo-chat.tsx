@@ -90,6 +90,51 @@ const EMAIL_RE = /[\w.+-]+@[\w-]+\.[\w.]+/;
 const NAME_NOISE_RE = /[—\-–,]|correo|email|mi nombre es|soy/gi;
 const REJECT_RE = /no|corregir|cambiar|mal/i;
 
+const DEMO_PARTICLES = [
+  { left: "5%", size: 2, delay: "0s", duration: "17s" },
+  { left: "12%", size: 3, delay: "5s", duration: "20s" },
+  { left: "21%", size: 2, delay: "11s", duration: "16s" },
+  { left: "38%", size: 2, delay: "3s", duration: "19s" },
+  { left: "49%", size: 3, delay: "8s", duration: "15s" },
+  { left: "61%", size: 2, delay: "1s", duration: "18s" },
+  { left: "74%", size: 2, delay: "9s", duration: "21s" },
+  { left: "87%", size: 3, delay: "4s", duration: "16s" },
+  { left: "95%", size: 2, delay: "13s", duration: "18s" },
+];
+
+const DEMO_STARS = [
+  { left: "8%", top: "17%", size: 2, delay: "0s", duration: "4.4s" },
+  { left: "19%", top: "62%", size: 1.5, delay: "1.6s", duration: "5.2s" },
+  { left: "29%", top: "28%", size: 2, delay: "3s", duration: "4s" },
+  { left: "44%", top: "11%", size: 1.5, delay: "0.8s", duration: "5.8s" },
+  { left: "56%", top: "72%", size: 2, delay: "2.7s", duration: "4.7s" },
+  { left: "69%", top: "24%", size: 1.5, delay: "1.2s", duration: "5.3s" },
+  { left: "81%", top: "49%", size: 2, delay: "3.8s", duration: "4.5s" },
+  { left: "92%", top: "19%", size: 1.5, delay: "2s", duration: "5s" },
+];
+
+const DEMO_BEAMS = [
+  { top: "15%", rotate: "-8deg", delay: "0s", duration: "7.8s" },
+  { top: "37%", rotate: "6deg", delay: "2.1s", duration: "9s" },
+  { top: "63%", rotate: "-4deg", delay: "4.2s", duration: "8.4s" },
+  { top: "82%", rotate: "10deg", delay: "5.8s", duration: "10s" },
+];
+
+const DEMO_COMETS = [
+  { top: "24%", left: "-8%", rotate: "13deg", delay: "1.4s", duration: "15s" },
+  { top: "54%", left: "-10%", rotate: "-10deg", delay: "7.2s", duration: "19s" },
+  { top: "76%", left: "-7%", rotate: "7deg", delay: "12s", duration: "22s" },
+];
+
+const DEMO_SIGNAL_COLUMNS = [
+  { left: "10%", top: "24%", height: "8rem", delay: "0s", duration: "2.7s" },
+  { left: "17%", top: "50%", height: "5.5rem", delay: "0.7s", duration: "3.4s" },
+  { left: "32%", top: "18%", height: "6.5rem", delay: "1.2s", duration: "3s" },
+  { left: "66%", top: "15%", height: "7rem", delay: "0.3s", duration: "3.6s" },
+  { left: "78%", top: "42%", height: "9rem", delay: "1.6s", duration: "2.9s" },
+  { left: "90%", top: "28%", height: "6rem", delay: "0.9s", duration: "3.2s" },
+];
+
 let nextId = 1;
 
 export function DemoChat() {
@@ -101,6 +146,8 @@ export function DemoChat() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const startedRef = useRef(false);
   const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+
+  const streamingNow = messages.some((m) => m.streaming);
 
   useEffect(() => {
     const timers = timersRef.current;
@@ -165,7 +212,7 @@ export function DemoChat() {
 
   function handleSend(raw?: string) {
     const text = (raw ?? input).trim();
-    if (!text || typing) return;
+    if (!text || typing || streamingNow) return;
     setInput("");
     setMessages((m) => [...m, { id: nextId++, role: "user", text }]);
 
@@ -236,12 +283,32 @@ export function DemoChat() {
   return (
     <section
       id="demo"
-      className="relative overflow-hidden bg-nexus-deep py-28 sm:py-36"
+      className="relative isolate overflow-hidden bg-nexus-deep py-28 sm:py-36"
     >
-      {/* Fondo animado: auroras + grid enmascarado, como en el hero */}
-      <div aria-hidden className="absolute inset-0 overflow-hidden">
+      {/* Fondo animado: auroras, senales de datos y particulas deterministas */}
+      <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div
+          className="absolute inset-[-18%] opacity-55 motion-safe:animate-hero-mesh"
+          style={{
+            backgroundImage:
+              "radial-gradient(circle at 16% 24%, rgba(173,116,195,0.30), transparent 27%), radial-gradient(circle at 76% 16%, rgba(52,211,153,0.13), transparent 25%), radial-gradient(circle at 56% 82%, rgba(251,113,133,0.10), transparent 28%)",
+            backgroundSize: "135% 135%, 128% 128%, 145% 145%",
+          }}
+        />
         <div className="absolute -right-48 top-10 size-[34rem] rounded-full bg-nexus-purple/50 blur-[140px] motion-safe:animate-drift-2" />
         <div className="absolute -left-48 bottom-0 size-[30rem] rounded-full bg-nexus-lavender/15 blur-[140px] motion-safe:animate-drift-1" />
+        <div className="absolute left-[42%] top-[18%] size-[24rem] rounded-full bg-nexus-mint/10 blur-[130px] motion-safe:animate-drift-3" />
+        <div className="absolute left-[66%] top-1/2 size-[48rem] -translate-x-1/2 -translate-y-1/2 rounded-full opacity-25">
+          <div
+            className="absolute inset-0 rounded-full motion-safe:animate-radial-sweep"
+            style={{
+              background:
+                "conic-gradient(from 120deg, transparent 0deg, rgba(173,116,195,0.34) 36deg, rgba(52,211,153,0.18) 52deg, transparent 82deg, transparent 360deg)",
+              maskImage:
+                "radial-gradient(circle, transparent 0 20%, black 25%, transparent 62%)",
+            }}
+          />
+        </div>
         <div
           className="absolute inset-0 opacity-[0.1]"
           style={{
@@ -252,6 +319,87 @@ export function DemoChat() {
               "radial-gradient(ellipse 70% 70% at 70% 50%, black, transparent)",
           }}
         />
+        {DEMO_BEAMS.map((beam, i) => (
+          <span
+            key={`demo-beam-${i}`}
+            className="absolute left-[-14%] h-px w-[128%]"
+            style={{
+              top: beam.top,
+              transform: `rotate(${beam.rotate})`,
+            }}
+          >
+            <span
+              className="block h-px w-1/3 bg-gradient-to-r from-transparent via-nexus-lavender/50 to-transparent blur-[0.5px] motion-safe:animate-energy-beam"
+              style={{
+                animationDelay: beam.delay,
+                animationDuration: beam.duration,
+              }}
+            />
+          </span>
+        ))}
+        {DEMO_STARS.map((star, i) => (
+          <span
+            key={`demo-star-${i}`}
+            className="absolute rounded-full bg-white motion-safe:animate-twinkle"
+            style={{
+              left: star.left,
+              top: star.top,
+              width: star.size,
+              height: star.size,
+              animationDelay: star.delay,
+              animationDuration: star.duration,
+              boxShadow: "0 0 9px rgba(248,237,251,0.58)",
+            }}
+          />
+        ))}
+        {DEMO_COMETS.map((comet, i) => (
+          <span
+            key={`demo-comet-${i}`}
+            className="absolute h-px w-[120%]"
+            style={{
+              top: comet.top,
+              left: comet.left,
+              transform: `rotate(${comet.rotate})`,
+            }}
+          >
+            <span
+              className="block h-px w-40 rounded-full bg-gradient-to-r from-transparent via-[#AD74C3]/50 to-white opacity-0 shadow-[0_0_14px_rgba(173,116,195,0.7)] motion-safe:animate-comet"
+              style={{
+                animationDelay: comet.delay,
+                animationDuration: comet.duration,
+              }}
+            />
+          </span>
+        ))}
+        {DEMO_SIGNAL_COLUMNS.map((column, i) => (
+          <span
+            key={`demo-column-${i}`}
+            className="absolute w-px origin-bottom rounded-full bg-gradient-to-t from-transparent via-nexus-mint/45 to-nexus-lavender/60 motion-safe:animate-data-pulse"
+            style={{
+              left: column.left,
+              top: column.top,
+              height: column.height,
+              animationDelay: column.delay,
+              animationDuration: column.duration,
+              boxShadow:
+                "0 0 18px rgba(52,211,153,0.22), 0 0 28px rgba(173,116,195,0.20)",
+            }}
+          />
+        ))}
+        {DEMO_PARTICLES.map((particle, i) => (
+          <span
+            key={`demo-particle-${i}`}
+            className="absolute bottom-[-8px] rounded-full bg-nexus-lavender/55 opacity-0 motion-safe:animate-rise"
+            style={{
+              left: particle.left,
+              width: particle.size,
+              height: particle.size,
+              animationDelay: particle.delay,
+              animationDuration: particle.duration,
+            }}
+          />
+        ))}
+        <div className="absolute inset-x-0 bottom-0 h-44 bg-gradient-to-t from-nexus-deep to-transparent" />
       </div>
 
       <div className="relative mx-auto grid max-w-7xl items-center gap-16 px-5 sm:px-8 lg:grid-cols-2">
@@ -461,6 +609,11 @@ export function DemoChat() {
                   backgroundSize: "34px 34px",
                 }}
               />
+              {messages.length > 0 && (
+                <div className="relative z-10 mx-auto shrink-0 rounded-full bg-nexus-purple/10 px-3 py-1 text-[10px] font-medium text-nexus-purple/70">
+                  Hoy
+                </div>
+              )}
               <AnimatePresence initial={false}>
                 {messages.map((m) =>
                   m.role === "bot" ? (
@@ -513,7 +666,7 @@ export function DemoChat() {
                   <span className="grid size-6 shrink-0 place-items-center rounded-full bg-gradient-to-br from-nexus-purple to-nexus-lavender shadow-sm">
                     <Sparkles aria-hidden className="size-3 text-white" />
                   </span>
-                  <div className="flex gap-1.5 rounded-2xl rounded-bl-md border border-nexus-purple/8 bg-white px-4 py-3.5 shadow-[0_2px_8px_rgba(61,26,78,0.07)]">
+                  <div className="flex gap-1.5 rounded-[18px] rounded-bl-[5px] border border-white bg-white/95 px-4 py-3.5 shadow-[0_12px_32px_-18px_rgba(61,26,78,0.45),0_2px_8px_rgba(61,26,78,0.08)] backdrop-blur">
                     {[0, 1, 2].map((d) => (
                       <span
                         key={d}
@@ -528,7 +681,7 @@ export function DemoChat() {
 
             {/* Quick replies */}
             <AnimatePresence>
-              {QUICK_REPLIES[stage].length > 0 && !typing && (
+              {QUICK_REPLIES[stage].length > 0 && !typing && !streamingNow && (
                 <motion.div
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: "auto" }}

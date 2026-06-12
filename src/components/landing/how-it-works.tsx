@@ -10,40 +10,68 @@ import {
 } from "motion/react";
 import {
   BrainCircuit,
+  Check,
+  Clock3,
   Code2,
+  Copy,
+  Gauge,
   MessagesSquare,
   TrendingUp,
+  Zap,
 } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { SectionHeading } from "./section-heading";
 import { RevealItem, RevealStagger } from "./reveal";
 import { TiltCard } from "./tilt-card";
-import { cn } from "@/lib/utils";
 
 const steps = [
   {
     icon: BrainCircuit,
     title: "Entrena tu bot",
     description:
-      "Sube tus documentos, catálogos y preguntas frecuentes. Nexus aprende tu negocio en minutos con búsqueda semántica.",
+      "Sube documentos, catálogos y preguntas frecuentes: Nexus aprende tu negocio con búsqueda semántica.",
+    bullets: [
+      "PDF, Word, texto y URLs",
+      "Conocimiento por categorías",
+      "Sin equipo técnico",
+    ],
+    meta: { icon: Clock3, label: "≈ 5 min de configuración" },
   },
   {
     icon: Code2,
     title: "Instálalo en tu web",
     description:
-      "Copia una línea de código y el widget aparece en tu sitio. Sin desarrolladores, sin fricción, con tu marca.",
+      "Copia una línea de código y el widget aparece en tu sitio, con tus colores y tu tono de marca.",
+    bullets: [
+      "Compatible con cualquier web",
+      "Personalizado con tu marca",
+      "Carga ligera, cero fricción",
+    ],
+    meta: { icon: Copy, label: "1 línea de código" },
   },
   {
     icon: MessagesSquare,
     title: "Conversa y captura",
     description:
-      "El bot atiende a cada visitante, responde con tu conocimiento y captura sus datos en el momento exacto.",
+      "El bot atiende a cada visitante con tu conocimiento y pide sus datos en el momento exacto.",
+    bullets: [
+      "Respuestas con tu información",
+      "Captura datos sin formularios",
+      "Conversaciones simultáneas",
+    ],
+    meta: { icon: Zap, label: "Atención 24/7" },
   },
   {
     icon: TrendingUp,
     title: "Recibe leads calificados",
     description:
-      "Cada lead llega con score de 0 a 100, resumen ejecutivo y datos estructurados, listo para tu equipo de ventas.",
+      "Cada lead llega con score, resumen ejecutivo y datos estructurados, listo para tu equipo de ventas.",
+    bullets: [
+      "Resumen ejecutivo por lead",
+      "Datos exportables a tu CRM",
+      "Alertas por email y webhook",
+    ],
+    meta: { icon: Gauge, label: "Score NEX de 0 a 100" },
   },
 ];
 
@@ -72,34 +100,34 @@ function LeadScoreGauge() {
       ref={ref}
       role="img"
       aria-label="Score NEX de ejemplo: 87 de 100"
-      className="relative grid size-24 shrink-0 place-items-center"
+      className="relative grid size-16 shrink-0 place-items-center"
     >
-      <svg viewBox="0 0 96 96" className="size-24 -rotate-90">
+      <svg viewBox="0 0 64 64" className="size-16 -rotate-90">
         <circle
-          cx="48"
-          cy="48"
-          r="40"
+          cx="32"
+          cy="32"
+          r="27"
           fill="none"
           stroke="#522566"
           strokeOpacity="0.1"
-          strokeWidth="7"
+          strokeWidth="5"
         />
         <motion.circle
-          cx="48"
-          cy="48"
-          r="40"
+          cx="32"
+          cy="32"
+          r="27"
           fill="none"
           stroke="#34D399"
-          strokeWidth="7"
+          strokeWidth="5"
           strokeLinecap="round"
           style={{ pathLength }}
         />
       </svg>
       <div className="absolute flex flex-col items-center">
-        <motion.span className="text-2xl font-bold leading-none tabular-nums text-[#111827]">
+        <motion.span className="text-lg font-bold leading-none tabular-nums text-nexus-ink">
           {rounded}
         </motion.span>
-        <span className="mt-1 text-[9px] font-bold uppercase tracking-widest text-[#34D399]">
+        <span className="mt-0.5 text-[7px] font-bold uppercase tracking-widest text-nexus-mint">
           Score
         </span>
       </div>
@@ -116,7 +144,7 @@ export function HowItWorks() {
   const lineScale = useTransform(scrollYProgress, [0, 1], [0, 1]);
 
   return (
-    <section id="como-funciona" className="bg-white py-28 sm:py-36">
+    <section id="como-funciona" className="bg-white py-20 sm:py-28">
       <div className="mx-auto max-w-7xl px-5 sm:px-8">
         <SectionHeading
           eyebrow="Cómo funciona"
@@ -124,42 +152,78 @@ export function HowItWorks() {
           subtitle="Diseñado para que cualquier empresa lo ponga en marcha el mismo día, sin equipo técnico."
         />
 
-        <div ref={lineRef} className="relative mt-20">
-          {/* Línea de progreso que se dibuja con el scroll */}
-          <div
-            aria-hidden
-            className="absolute left-7 top-0 hidden h-full w-px bg-nexus-lilac lg:left-1/2 lg:top-7 lg:h-px lg:w-full lg:bg-transparent"
-          />
+        <div ref={lineRef} className="relative mt-14">
+          {/* Línea de progreso que se dibuja con el scroll; los huecos entre
+              tarjetas dejan ver los segmentos a la altura de los iconos */}
           <motion.div
             aria-hidden
             style={{ scaleX: lineScale }}
-            className="absolute left-0 top-7 hidden h-px w-full origin-left bg-gradient-to-r from-nexus-purple via-nexus-lavender to-nexus-mint lg:block"
+            className="absolute inset-x-0 top-12 hidden h-px origin-left bg-gradient-to-r from-nexus-purple via-nexus-lavender to-nexus-mint lg:block"
           />
 
           <RevealStagger
             stagger={0.08}
-            className="grid gap-8 lg:grid-cols-12"
+            className="grid gap-5 md:grid-cols-2 lg:grid-cols-4"
           >
             {steps.map((step, i) => (
-              <RevealItem key={step.title} className={cn("relative h-full", i === 0 || i === 3 ? "lg:col-span-7" : "lg:col-span-5")}>
-                <TiltCard className="h-full rounded-[2.5rem]">
-                  <div className="flex h-full flex-col items-start rounded-[2.5rem] bg-[#F8EDFB]/50 p-10 transition-shadow hover:shadow-xl hover:shadow-[#522566]/5">
-                    <div className="flex w-full items-start justify-between gap-6">
-                      <div className="relative z-10 grid size-16 shrink-0 place-items-center rounded-[1.25rem] bg-gradient-to-br from-[#522566] to-[#3D1A4E] shadow-lg shadow-[#522566]/25 transition-transform duration-300 hover:scale-110 hover:rotate-3">
-                        <step.icon className="size-7 text-[#AD74C3]" />
+              <RevealItem key={step.title} className="relative h-full">
+                <TiltCard className="h-full rounded-[1.75rem]">
+                  {/* Borde hairline degradado: wrapper de 1px con gradiente */}
+                  <div className="h-full rounded-[1.75rem] bg-gradient-to-b from-nexus-purple/15 via-nexus-lavender/10 to-nexus-purple/5 p-px shadow-lg shadow-nexus-purple/5 transition-shadow duration-300 hover:shadow-xl hover:shadow-nexus-purple/10">
+                    <div className="relative flex h-full flex-col overflow-hidden rounded-[calc(1.75rem-1px)] bg-gradient-to-b from-white to-nexus-lilac/55 p-6">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="grid size-12 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-nexus-purple to-nexus-deep shadow-lg shadow-nexus-purple/25 transition-transform duration-300 hover:scale-110 hover:rotate-3">
+                          <step.icon className="size-5 text-nexus-lavender" />
+                        </div>
+                        {i === 3 ? (
+                          <LeadScoreGauge />
+                        ) : (
+                          <span
+                            aria-hidden
+                            className="select-none text-5xl font-bold leading-none tracking-tight text-nexus-purple/[0.08]"
+                          >
+                            0{i + 1}
+                          </span>
+                        )}
                       </div>
-                      {i === 3 && <LeadScoreGauge />}
-                    </div>
-                    <div className="mt-8 flex flex-col flex-1">
-                      <span className="text-[11px] font-bold uppercase tracking-widest text-[#AD74C3]">
+
+                      <span className="mt-5 text-[10px] font-bold uppercase tracking-widest text-nexus-lavender">
                         Paso {i + 1}
                       </span>
-                      <h3 className="mt-3 text-2xl font-semibold tracking-tight text-[#111827]">
+                      <h3 className="mt-1.5 text-lg font-semibold tracking-tight text-nexus-ink">
                         {step.title}
                       </h3>
-                      <p className="mt-4 text-[16px] leading-relaxed text-[#111827]/60">
+                      <p className="mt-2 text-sm leading-relaxed text-nexus-ink/60">
                         {step.description}
                       </p>
+
+                      <ul className="mb-5 mt-4 space-y-2">
+                        {step.bullets.map((bullet) => (
+                          <li
+                            key={bullet}
+                            className="flex items-start gap-2 text-[13px] leading-snug text-nexus-ink/75"
+                          >
+                            <span className="mt-0.5 grid size-4 shrink-0 place-items-center rounded-full bg-nexus-mint/15">
+                              <Check
+                                aria-hidden
+                                strokeWidth={3.5}
+                                className="size-2.5 text-nexus-mint"
+                              />
+                            </span>
+                            {bullet}
+                          </li>
+                        ))}
+                      </ul>
+
+                      <div className="mt-auto flex items-center gap-2 border-t border-nexus-purple/10 pt-3.5">
+                        <step.meta.icon
+                          aria-hidden
+                          className="size-3.5 text-nexus-lavender"
+                        />
+                        <span className="text-xs font-medium text-nexus-ink/70">
+                          {step.meta.label}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </TiltCard>

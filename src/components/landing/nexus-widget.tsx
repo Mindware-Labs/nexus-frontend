@@ -1,13 +1,14 @@
 "use client";
 
 import { AnimatePresence, motion } from "motion/react";
-import { MessageCircle, Send, Sparkles, X } from "lucide-react";
+import { CheckCheck, MessageCircle, Send, Sparkles, X, Zap } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 /**
  * Widget flotante de Mindware Nexus: la landing usa su propio producto.
- * Simulación del bot real — responde sobre el producto y permite
- * registrarse conversando (alternativa al formulario de contacto).
+ * Simulación del bot real — responde sobre el producto, registra leads
+ * conversando (alternativa al formulario) y transmite las respuestas
+ * con streaming carácter a carácter, como el SSE del producto real.
  */
 
 export const OPEN_WIDGET_EVENT = "nexus:open-widget";
@@ -20,7 +21,14 @@ type Flow =
   | "reg_confirm"
   | "done";
 
-type Message = { id: number; role: "bot" | "user"; text: string };
+type Message = {
+  id: number;
+  role: "bot" | "user";
+  text: string;
+  streaming?: boolean;
+  /* "lead": tarjeta de registro confirmado dentro del chat */
+  kind?: "lead";
+};
 
 const EMAIL_RE = /[\w.+-]+@[\w-]+\.[\w.]+/;
 const YES_RE = /s[ií]|correcto|dale|ok|claro|perfecto/i;
@@ -51,31 +59,20 @@ const QUICK: Record<Flow, string[]> = {
 
 let nextId = 1;
 
-function StreamText({ text }: { text: string }) {
-  return (
-    <motion.span
-      initial="hidden"
-      animate="visible"
-      variants={{ visible: { transition: { staggerChildren: 0.045 } } }}
-    >
-      {text.split(" ").map((word, i) => (
-        <motion.span
-          key={i}
-          variants={{
-            hidden: { opacity: 0 },
-            visible: { opacity: 1, transition: { duration: 0.15 } },
-          }}
-        >
-          {word}{" "}
-        </motion.span>
-      ))}
-    </motion.span>
-  );
+function initialsOf(name: string) {
+  return name
+    .trim()
+    .split(/\s+/)
+    .map((part) => part[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
 }
 
 export function NexusWidget() {
   const [open, setOpen] = useState(false);
   const [teaser, setTeaser] = useState(false);
+  const [unread, setUnread] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [flow, setFlow] = useState<Flow>("menu");
   const [typing, setTyping] = useState(false);
@@ -87,15 +84,20 @@ export function NexusWidget() {
   const openedOnceRef = useRef(false);
   const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
 
+  const streamingNow = messages.some((m) => m.streaming);
+
   useEffect(() => {
     const timers = timersRef.current;
     return () => timers.forEach(clearTimeout);
   }, []);
 
-  /* Teaser tras unos segundos si nunca se abrió */
+  /* Teaser + badge de no leído tras unos segundos si nunca se abrió */
   useEffect(() => {
     const t = setTimeout(() => {
-      if (!openedOnceRef.current) setTeaser(true);
+      if (!openedOnceRef.current) {
+        setTeaser(true);
+        setUnread(true);
+      }
     }, 6000);
     return () => clearTimeout(t);
   }, []);
@@ -109,8 +111,10 @@ export function NexusWidget() {
          que apareciera antes que el saludo de bienvenida. */
       const alreadyStarted = startedRef.current;
       openWidget();
+      /* El saludo ahora se transmite por streaming (~3.5s): el registro
+         espera a que termine para no pisarlo. */
       if (intent === "register") {
-        schedule(() => startRegistration(), alreadyStarted ? 300 : 2100);
+        schedule(() => startRegistration(), alreadyStarted ? 300 : 4600);
       }
     }
     window.addEventListener(OPEN_WIDGET_EVENT, onOpen);
@@ -139,18 +143,49 @@ export function NexusWidget() {
     timersRef.current.push(setTimeout(fn, ms));
   }
 
+  /* Streaming tipo SSE: ráfagas de 1–3 caracteres con cadencia orgánica —
+     pausas largas tras puntuación fuerte, medias tras comas y micro-jitter
+     entre caracteres, igual que el widget real contra el backend. */
   function botSay(text: string, after?: () => void) {
     setTyping(true);
     schedule(() => {
       setTyping(false);
-      setMessages((m) => [...m, { id: nextId++, role: "bot", text }]);
-      after?.();
-    }, 750);
+      const id = nextId++;
+      setMessages((m) => [...m, { id, role: "bot", text: "", streaming: true }]);
+      let cursor = 0;
+      const tick = () => {
+        cursor = Math.min(text.length, cursor + 1 + Math.floor(Math.random() * 3));
+        const done = cursor >= text.length;
+        setMessages((m) =>
+          m.map((msg) =>
+            msg.id === id
+              ? { ...msg, text: text.slice(0, cursor), streaming: !done }
+              : msg,
+          ),
+        );
+        if (done) {
+          after?.();
+          return;
+        }
+        const lastChar = text[cursor - 1];
+        const delay = /[.!?…]/.test(lastChar)
+          ? 200 + Math.random() * 160
+          : /[,;:]/.test(lastChar)
+            ? 80 + Math.random() * 70
+            : lastChar === " "
+              ? 22 + Math.random() * 36
+              : 12 + Math.random() * 24;
+        schedule(tick, delay);
+      };
+      /* Arranque con jitter: simula la latencia variable del primer chunk */
+      schedule(tick, 80 + Math.random() * 280);
+    }, 650);
   }
 
   function openWidget() {
     setOpen(true);
     setTeaser(false);
+    setUnread(false);
     openedOnceRef.current = true;
     if (!startedRef.current) {
       startedRef.current = true;
@@ -165,7 +200,7 @@ export function NexusWidget() {
 
   function handleSend(raw?: string) {
     const text = (raw ?? input).trim();
-    if (!text || typing) return;
+    if (!text || typing || streamingNow) return;
     setInput("");
     setMessages((m) => [...m, { id: nextId++, role: "user", text }]);
 
@@ -214,6 +249,13 @@ export function NexusWidget() {
           setFlow("done");
           botSay(
             "¡Listo! ✅ Tu solicitud de acceso quedó registrada y el equipo de Mindware Labs te escribirá muy pronto. Esto mismo haré con los visitantes de tu web. 😉",
+            () => {
+              /* La tarjeta de lead aparece en el chat, como en el panel real */
+              setMessages((m) => [
+                ...m,
+                { id: nextId++, role: "bot", kind: "lead", text: "" },
+              ]);
+            },
           );
         } else {
           setFlow("reg_nombre");
@@ -257,13 +299,21 @@ export function NexusWidget() {
             }}
             transition={{ type: "spring", stiffness: 280, damping: 26, mass: 0.9 }}
             style={{ transformOrigin: "bottom right" }}
-            className="fixed bottom-24 right-4 z-50 w-[min(calc(100vw-2rem),24rem)] rounded-[26px] bg-gradient-to-b from-white/30 via-white/10 to-white/5 p-px shadow-2xl shadow-black/50 sm:right-6"
+            className="fixed bottom-24 right-4 z-50 w-[min(calc(100vw-2rem),24rem)] rounded-[26px] bg-gradient-to-b from-white/40 via-nexus-lavender/30 to-nexus-mint/35 p-px shadow-[0_34px_80px_-30px_rgba(0,0,0,0.8),0_0_60px_-24px_rgba(173,116,195,0.7)] sm:right-6"
           >
             <div className="flex max-h-[min(34rem,calc(100svh-9rem))] flex-col overflow-hidden rounded-[25px]">
               {/* Header */}
-              <div className="flex items-center gap-3 bg-gradient-to-b from-nexus-purple to-nexus-deep px-5 py-4">
-                <span className="relative grid size-10 shrink-0 place-items-center rounded-full bg-gradient-to-br from-nexus-purple to-nexus-lavender ring-2 ring-white/15">
-                  <Sparkles className="size-5 text-white" />
+              <div className="relative flex items-center gap-3 overflow-hidden bg-[radial-gradient(circle_at_22%_0%,rgba(173,116,195,0.35),transparent_36%),linear-gradient(180deg,#522566_0%,#3D1A4E_100%)] px-5 py-4">
+                <span
+                  aria-hidden
+                  className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/55 to-transparent"
+                />
+                <span className="relative grid size-10 shrink-0 place-items-center rounded-full bg-gradient-to-br from-nexus-lavender via-nexus-purple to-nexus-purple shadow-[0_10px_28px_-12px_rgba(173,116,195,0.9)] ring-2 ring-white/15">
+                  <span
+                    aria-hidden
+                    className="absolute -inset-1 rounded-full border border-white/10 motion-safe:animate-spin-slow"
+                  />
+                  <Sparkles className="relative size-5 text-white" />
                   <span className="absolute -bottom-0.5 -right-0.5 size-3 rounded-full border-2 border-nexus-deep bg-nexus-mint" />
                 </span>
                 <div className="flex-1">
@@ -277,7 +327,7 @@ export function NexusWidget() {
                 <button
                   onClick={() => setOpen(false)}
                   aria-label="Cerrar chat"
-                  className="grid size-8 place-items-center rounded-full text-white/50 transition-[color,background-color,transform] duration-150 ease-out hover:bg-white/10 hover:text-white active:scale-90 focus-visible:outline-2 focus-visible:outline-nexus-lavender"
+                  className="relative grid size-8 place-items-center rounded-full text-white/50 transition-[color,background-color,transform] duration-150 ease-out hover:bg-white/10 hover:text-white active:scale-90 focus-visible:outline-2 focus-visible:outline-nexus-lavender"
                 >
                   <X aria-hidden className="size-4" />
                 </button>
@@ -288,23 +338,86 @@ export function NexusWidget() {
                 ref={scrollRef}
                 role="log"
                 aria-live="polite"
-                className="nexus-chat-scroll flex min-h-72 flex-1 flex-col gap-2.5 overflow-y-auto overscroll-contain bg-gradient-to-b from-nexus-lilac/90 to-nexus-lilac/60 px-4 py-4"
+                className="nexus-chat-scroll relative flex min-h-72 flex-1 flex-col gap-2.5 overflow-y-auto overscroll-contain bg-[radial-gradient(circle_at_12%_16%,rgba(173,116,195,0.14),transparent_30%),linear-gradient(180deg,rgba(248,237,251,0.98),rgba(255,255,255,0.86))] px-4 py-4"
               >
+                <div
+                  aria-hidden
+                  className="pointer-events-none absolute inset-0 opacity-[0.22]"
+                  style={{
+                    backgroundImage:
+                      "linear-gradient(rgba(82,37,102,0.16) 1px, transparent 1px), linear-gradient(90deg, rgba(82,37,102,0.14) 1px, transparent 1px)",
+                    backgroundSize: "34px 34px",
+                  }}
+                />
+                {messages.length > 0 && (
+                  <div className="relative z-10 mx-auto shrink-0 rounded-full bg-nexus-purple/10 px-3 py-1 text-[10px] font-medium text-nexus-purple/70">
+                    Hoy
+                  </div>
+                )}
                 <AnimatePresence initial={false}>
                   {messages.map((m) =>
-                    m.role === "bot" ? (
+                    m.kind === "lead" ? (
+                      <motion.div
+                        key={m.id}
+                        initial={{ opacity: 0, y: 14, scale: 0.97 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        transition={{ type: "spring", stiffness: 260, damping: 26, mass: 0.9 }}
+                        className="relative z-10 shrink-0 px-1 pt-1"
+                      >
+                        <div className="rounded-2xl bg-gradient-to-r from-nexus-mint/50 via-white/20 to-nexus-lavender/45 p-px shadow-[0_18px_44px_-22px_rgba(61,26,78,0.6)]">
+                          <div className="relative overflow-hidden rounded-[calc(1rem-1px)] bg-nexus-deep p-3.5">
+                            <span
+                              aria-hidden
+                              className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-nexus-mint/70 to-transparent"
+                            />
+                            <div className="flex items-center justify-between gap-3">
+                              <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-white/60">
+                                <Zap aria-hidden className="size-3 text-nexus-mint" />
+                                Registro confirmado
+                              </span>
+                              <span className="rounded-full bg-nexus-mint/15 px-2 py-0.5 text-[11px] font-medium text-nexus-mint ring-1 ring-nexus-mint/25">
+                                Acceso anticipado
+                              </span>
+                            </div>
+                            <div className="mt-2.5 flex items-center gap-2.5">
+                              <span
+                                aria-hidden
+                                className="grid size-8 shrink-0 place-items-center rounded-full bg-gradient-to-br from-nexus-lavender to-nexus-purple text-[10px] font-semibold text-white ring-1 ring-white/20"
+                              >
+                                {initialsOf(lead.nombre || "Nexus")}
+                              </span>
+                              <div className="min-w-0">
+                                <p className="truncate text-[13px] font-semibold leading-tight text-white">
+                                  {lead.nombre}
+                                </p>
+                                <p className="truncate text-[11px] text-white/50">
+                                  {lead.empresa} · {lead.email}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </motion.div>
+                    ) : m.role === "bot" ? (
                       <motion.div
                         key={m.id}
                         initial={{ opacity: 0, y: 12, scale: 0.97 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         transition={{ type: "spring", stiffness: 260, damping: 26, mass: 0.9 }}
-                        className="flex max-w-[88%] shrink-0 items-end gap-2 self-start"
+                        className="relative z-10 flex max-w-[88%] shrink-0 items-end gap-2 self-start"
                       >
                         <span className="grid size-6 shrink-0 place-items-center rounded-full bg-gradient-to-br from-nexus-purple to-nexus-lavender shadow-sm">
                           <Sparkles aria-hidden className="size-3 text-white" />
                         </span>
-                        <div className="rounded-2xl rounded-bl-md border border-nexus-purple/8 bg-white px-4 py-2.5 text-sm leading-relaxed text-nexus-ink shadow-[0_2px_8px_rgba(61,26,78,0.07)]">
-                          <StreamText text={m.text} />
+                        <div className="relative overflow-hidden rounded-[18px] rounded-bl-[5px] border border-white bg-white/95 px-4 py-2.5 text-sm leading-relaxed text-nexus-ink shadow-[0_12px_32px_-18px_rgba(61,26,78,0.45),0_2px_8px_rgba(61,26,78,0.08)] backdrop-blur">
+                          <span
+                            aria-hidden
+                            className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-nexus-lavender/45 to-transparent"
+                          />
+                          {m.text}
+                          {m.streaming && (
+                            <span className="ml-0.5 inline-block h-3.5 w-0.5 animate-pulse bg-nexus-lavender align-middle" />
+                          )}
                         </div>
                       </motion.div>
                     ) : (
@@ -313,9 +426,19 @@ export function NexusWidget() {
                         initial={{ opacity: 0, y: 12, scale: 0.97 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         transition={{ type: "spring", stiffness: 260, damping: 26, mass: 0.9 }}
-                        className="max-w-[85%] shrink-0 self-end rounded-2xl rounded-br-md bg-gradient-to-br from-nexus-purple to-nexus-deep px-4 py-2.5 text-sm leading-relaxed text-white shadow-[0_4px_12px_rgba(61,26,78,0.25)]"
+                        className="relative z-10 max-w-[85%] shrink-0 self-end overflow-hidden rounded-[18px] rounded-br-[5px] bg-gradient-to-br from-nexus-purple via-nexus-purple to-nexus-deep px-4 py-2.5 text-sm leading-relaxed text-white shadow-[0_16px_36px_-18px_rgba(61,26,78,0.8),0_4px_14px_rgba(61,26,78,0.28)] ring-1 ring-white/10"
                       >
-                        {m.text}
+                        <span
+                          aria-hidden
+                          className="absolute inset-0 bg-[radial-gradient(circle_at_18%_0%,rgba(173,116,195,0.38),transparent_55%)]"
+                        />
+                        <span className="relative z-10">{m.text}</span>
+                        <span className="ml-2 inline-flex translate-y-0.5">
+                          <CheckCheck
+                            aria-hidden
+                            className="size-3.5 text-nexus-lavender"
+                          />
+                        </span>
                       </motion.div>
                     ),
                   )}
@@ -325,12 +448,12 @@ export function NexusWidget() {
                   <motion.div
                     initial={{ opacity: 0, y: 8 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="flex shrink-0 items-end gap-2 self-start"
+                    className="relative z-10 flex shrink-0 items-end gap-2 self-start"
                   >
                     <span className="grid size-6 shrink-0 place-items-center rounded-full bg-gradient-to-br from-nexus-purple to-nexus-lavender shadow-sm">
                       <Sparkles aria-hidden className="size-3 text-white" />
                     </span>
-                    <div className="flex gap-1.5 rounded-2xl rounded-bl-md border border-nexus-purple/8 bg-white px-4 py-3 shadow-[0_2px_8px_rgba(61,26,78,0.07)]">
+                    <div className="flex gap-1.5 rounded-[18px] rounded-bl-[5px] border border-white bg-white/95 px-4 py-3 shadow-[0_2px_8px_rgba(61,26,78,0.07)]">
                       {[0, 1, 2].map((d) => (
                         <span
                           key={d}
@@ -344,28 +467,43 @@ export function NexusWidget() {
               </div>
 
               {/* Quick replies */}
-              {QUICK[flow].length > 0 && !typing && (
-                <div className="flex flex-wrap gap-2 bg-nexus-lilac/60 px-4 pb-3">
-                  {QUICK[flow].map((q) => (
-                    <button
-                      key={q}
-                      onClick={() => handleSend(q)}
-                      className="rounded-full border border-nexus-purple/25 bg-white px-3.5 py-1.5 text-xs font-medium text-nexus-purple transition-[transform,background-color,border-color,color] duration-200 ease-out hover:scale-[1.03] hover:border-nexus-purple hover:bg-nexus-purple hover:text-white active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-nexus-purple"
-                    >
-                      {q}
-                    </button>
-                  ))}
-                </div>
-              )}
+              <AnimatePresence>
+                {QUICK[flow].length > 0 && !typing && !streamingNow && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{
+                      opacity: 0,
+                      height: 0,
+                      transition: { duration: 0.18, ease: "easeOut" },
+                    }}
+                    className="flex flex-wrap gap-2 overflow-hidden bg-white/80 px-4 pb-3"
+                  >
+                    {QUICK[flow].map((q) => (
+                      <button
+                        key={q}
+                        onClick={() => handleSend(q)}
+                        className="rounded-full border border-nexus-purple/25 bg-white px-3.5 py-1.5 text-xs font-medium text-nexus-purple transition-[transform,background-color,border-color,color] duration-200 ease-out hover:scale-[1.03] hover:border-nexus-purple hover:bg-nexus-purple hover:text-white active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-nexus-purple"
+                      >
+                        {q}
+                      </button>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
-              {/* Input */}
-              <div className="bg-nexus-deep px-4 pb-3 pt-3">
+              {/* Input + footer púrpura profundo */}
+              <div className="relative bg-[linear-gradient(180deg,#3D1A4E_0%,#111827_160%)] px-4 pb-3 pt-3">
+                <span
+                  aria-hidden
+                  className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/22 to-transparent"
+                />
                 <form
                   onSubmit={(e) => {
                     e.preventDefault();
                     handleSend();
                   }}
-                  className="flex items-center gap-2 rounded-full bg-white/10 py-1.5 pl-4 pr-1.5 ring-1 ring-white/10 transition-[box-shadow] duration-300 focus-within:ring-nexus-lavender/60 focus-within:shadow-[0_0_0_4px_rgba(173,116,195,0.14),0_0_30px_-6px_rgba(173,116,195,0.65)]"
+                  className="flex items-center gap-2 rounded-full bg-white/10 py-1.5 pl-4 pr-1.5 ring-1 ring-white/12 transition-[box-shadow] duration-300 focus-within:ring-nexus-lavender/60 focus-within:shadow-[0_0_0_4px_rgba(173,116,195,0.14),0_0_30px_-6px_rgba(173,116,195,0.65)]"
                 >
                   <input
                     value={input}
@@ -381,7 +519,7 @@ export function NexusWidget() {
                     type="submit"
                     disabled={!input.trim()}
                     aria-label="Enviar mensaje"
-                    className="grid size-9 place-items-center rounded-full bg-nexus-purple text-white transition-[transform,background-color] duration-200 ease-out hover:scale-105 hover:bg-nexus-lavender active:scale-95 disabled:opacity-40 disabled:hover:scale-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-nexus-lavender"
+                    className="grid size-9 place-items-center rounded-full bg-gradient-to-br from-nexus-lavender to-nexus-purple text-white shadow-[0_8px_22px_-10px_rgba(173,116,195,0.9)] transition-[transform,opacity] duration-200 ease-out hover:scale-105 active:scale-95 disabled:opacity-40 disabled:hover:scale-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-nexus-lavender"
                   >
                     <Send aria-hidden className="size-4" />
                   </button>
@@ -397,7 +535,7 @@ export function NexusWidget() {
         )}
       </AnimatePresence>
 
-      {/* Teaser */}
+      {/* Teaser: mini burbuja del bot, con su avatar */}
       <AnimatePresence>
         {teaser && !open && (
           <motion.button
@@ -412,9 +550,22 @@ export function NexusWidget() {
             }}
             transition={{ type: "spring", stiffness: 260, damping: 24, mass: 0.9 }}
             style={{ transformOrigin: "bottom right" }}
-            className="fixed bottom-24 right-4 z-50 max-w-56 rounded-2xl rounded-br-md bg-white px-4 py-3 text-left text-[13px] leading-snug text-nexus-ink shadow-xl shadow-black/25 ring-1 ring-nexus-purple/10 transition-transform duration-200 ease-out hover:scale-[1.03] active:scale-[0.98] sm:right-6"
+            className="fixed bottom-24 right-4 z-50 flex max-w-64 items-start gap-2.5 rounded-2xl rounded-br-md bg-white p-3.5 text-left shadow-xl shadow-black/25 ring-1 ring-nexus-purple/10 transition-transform duration-200 ease-out hover:scale-[1.03] active:scale-[0.98] sm:right-6"
           >
-            ¿Te ayudo a empezar? Pregúntame lo que quieras 👋
+            <span
+              aria-hidden
+              className="grid size-7 shrink-0 place-items-center rounded-full bg-gradient-to-br from-nexus-purple to-nexus-lavender shadow-sm"
+            >
+              <Sparkles className="size-3.5 text-white" />
+            </span>
+            <span>
+              <span className="block text-xs font-semibold text-nexus-ink">
+                Asistente Nexus
+              </span>
+              <span className="mt-0.5 block text-[13px] leading-snug text-nexus-ink/70">
+                ¿Te ayudo a empezar? Pregúntame lo que quieras 👋
+              </span>
+            </span>
           </motion.button>
         )}
       </AnimatePresence>
@@ -433,6 +584,20 @@ export function NexusWidget() {
           aria-hidden
           className="absolute inset-0 -z-10 rounded-full bg-nexus-lavender/40 blur-md motion-safe:animate-pulse-glow"
         />
+        <AnimatePresence>
+          {unread && !open && (
+            <motion.span
+              key="badge"
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0, transition: { duration: 0.15 } }}
+              transition={{ type: "spring", stiffness: 380, damping: 20 }}
+              className="absolute -right-0.5 -top-0.5 grid size-5 place-items-center rounded-full bg-nexus-coral text-[10px] font-bold text-white shadow-md ring-2 ring-white"
+            >
+              1
+            </motion.span>
+          )}
+        </AnimatePresence>
         <AnimatePresence mode="wait" initial={false}>
           {open ? (
             <motion.span
