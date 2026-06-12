@@ -2,7 +2,7 @@
 
 import {
   AnimatePresence,
-  motion,
+  m,
   useScroll,
   useSpring,
 } from "motion/react";
@@ -67,7 +67,7 @@ export function Navbar() {
       )}
     >
       {/* Progreso de lectura */}
-      <motion.span
+      <m.span
         aria-hidden
         style={{ scaleX: progress }}
         className="absolute inset-x-0 top-0 h-0.5 origin-left bg-gradient-to-r from-nexus-purple via-nexus-lavender to-nexus-mint"
@@ -105,7 +105,7 @@ export function Navbar() {
                 )}
               >
                 {isActive && (
-                  <motion.span
+                  <m.span
                     layoutId="nav-active-pill"
                     transition={{ type: "spring", stiffness: 380, damping: 32, mass: 0.8 }}
                     className="absolute inset-0 rounded-full bg-white/10 ring-1 ring-white/15"
@@ -138,7 +138,7 @@ export function Navbar() {
 
       <AnimatePresence>
         {open && (
-          <motion.div
+          <m.div
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={{
@@ -173,7 +173,7 @@ export function Navbar() {
                 Solicitar acceso
               </a>
             </div>
-          </motion.div>
+          </m.div>
         )}
       </AnimatePresence>
     </header>

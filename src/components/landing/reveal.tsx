@@ -1,6 +1,6 @@
 "use client";
 
-import { motion, type Variants } from "motion/react";
+import { m, type Variants } from "motion/react";
 import type { ReactNode } from "react";
 
 /* Spring estándar de revelación: rápido y bien amortiguado (~0.45s de
@@ -34,7 +34,7 @@ export function Reveal({
   once?: boolean;
 }) {
   return (
-    <motion.div
+    <m.div
       className={className}
       variants={fadeUp}
       custom={delay}
@@ -43,7 +43,7 @@ export function Reveal({
       viewport={{ once, margin: "-40px" }}
     >
       {children}
-    </motion.div>
+    </m.div>
   );
 }
 
@@ -57,7 +57,7 @@ export function RevealStagger({
   stagger?: number;
 }) {
   return (
-    <motion.div
+    <m.div
       className={className}
       initial="hidden"
       whileInView="visible"
@@ -68,7 +68,7 @@ export function RevealStagger({
       }}
     >
       {children}
-    </motion.div>
+    </m.div>
   );
 }
 
@@ -80,7 +80,7 @@ export function RevealItem({
   className?: string;
 }) {
   return (
-    <motion.div
+    <m.div
       className={className}
       variants={{
         hidden: { opacity: 0, y: 25 },
@@ -88,6 +88,6 @@ export function RevealItem({
       }}
     >
       {children}
-    </motion.div>
+    </m.div>
   );
 }

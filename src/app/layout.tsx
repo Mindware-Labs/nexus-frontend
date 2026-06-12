@@ -7,14 +7,18 @@ import "./globals.css";
    vía @font-face en globals.css y primera en --font-sans. Geist se carga
    aquí SOLO como fallback documentado — no la apliques directamente en
    componentes. */
+/* preload: false — al ser solo fallback, no compiten con Switzer por el
+   ancho de banda crítico del primer pintado. */
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
+  preload: false,
 });
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+  preload: false,
 });
 
 export const metadata: Metadata = {

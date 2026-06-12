@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "motion/react";
+import { m } from "motion/react";
 import {
   Activity,
   ArrowUpRight,
@@ -301,7 +301,7 @@ export function PremiumShowcase() {
                     </div>
                     <div className="mt-4 flex h-20 items-end gap-1.5">
                       {bars.map((height, index) => (
-                        <motion.span
+                        <m.span
                           key={index}
                           initial={{ height: "0%" }}
                           whileInView={{ height: `${height}%` }}
@@ -376,7 +376,7 @@ export function PremiumShowcase() {
                         active > index || (active === 0 && index === workflow.length - 1);
 
                       return (
-                        <motion.div
+                        <m.div
                           key={item.label}
                           animate={{
                             opacity: isActive ? 1 : 0.72,
@@ -424,7 +424,7 @@ export function PremiumShowcase() {
                           >
                             {item.value}
                           </span>
-                        </motion.div>
+                        </m.div>
                       );
                     })}
                   </div>

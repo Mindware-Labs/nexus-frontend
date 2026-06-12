@@ -1,6 +1,6 @@
 "use client";
 
-import { animate, motion, useMotionValue, useTransform } from "motion/react";
+import { animate, m, useMotionValue, useTransform } from "motion/react";
 import { useEffect } from "react";
 import { cn } from "@/lib/utils";
 
@@ -33,13 +33,13 @@ export function ScoreMeter({
   return (
     <div className={cn("flex items-center gap-3", className)}>
       <div className="relative h-1.5 flex-1 overflow-hidden rounded-full bg-white/10">
-        <motion.div
+        <m.div
           style={{ scaleX, originX: 0 }}
           className="h-full w-full rounded-full bg-gradient-to-r from-[#AD74C3] to-[#34D399]"
         />
       </div>
       <span className="shrink-0 text-sm font-bold tabular-nums text-white">
-        <motion.span>{rounded}</motion.span>
+        <m.span>{rounded}</m.span>
         <span className="text-[11px] font-normal text-white/45">/100</span>
       </span>
     </div>

@@ -2,7 +2,7 @@
 
 import {
   AnimatePresence,
-  motion,
+  m,
   useMotionValue,
   useSpring,
   useTransform,
@@ -70,7 +70,7 @@ const CAPTURE_PARTICLES = [
 
 function StreamText({ text }: { text: string }) {
   return (
-    <motion.span
+    <m.span
       initial="hidden"
       animate="visible"
       variants={{
@@ -81,7 +81,7 @@ function StreamText({ text }: { text: string }) {
           por el colapsado de whitespace y las palabras salen pegadas */}
       {text.split(" ").map((word, i) => (
         <Fragment key={i}>
-          <motion.span
+          <m.span
             variants={{
               hidden: { opacity: 0, y: 3, filter: "blur(2px)" },
               visible: {
@@ -94,10 +94,10 @@ function StreamText({ text }: { text: string }) {
             className="inline-block"
           >
             {word}
-          </motion.span>{" "}
+          </m.span>{" "}
         </Fragment>
       ))}
-    </motion.span>
+    </m.span>
   );
 }
 
@@ -160,7 +160,7 @@ function Bubble({
   };
   if (from === "bot") {
     return (
-      <motion.div
+      <m.div
         layout
         initial={false}
         exit={exit}
@@ -176,11 +176,11 @@ function Bubble({
           />
           {children}
         </div>
-      </motion.div>
+      </m.div>
     );
   }
   return (
-    <motion.div
+    <m.div
       layout
       initial={false}
       exit={exit}
@@ -196,13 +196,13 @@ function Bubble({
       <span className="ml-2 inline-flex translate-y-0.5">
         <CheckCheck aria-hidden className="size-3.5 text-nexus-mint" />
       </span>
-    </motion.div>
+    </m.div>
   );
 }
 
 function TypingDots() {
   return (
-    <motion.div
+    <m.div
       layout
       initial={false}
       exit={{ opacity: 0, transition: { duration: 0.15 } }}
@@ -219,7 +219,7 @@ function TypingDots() {
           />
         ))}
       </div>
-    </motion.div>
+    </m.div>
   );
 }
 
@@ -234,7 +234,7 @@ function SignalRail({ step }: { step: number }) {
         const active = step >= index + 1;
 
         return (
-          <motion.div
+          <m.div
             key={signal.label}
             initial={{ opacity: 0, x: 24, rotateY: 15, scale: 0.9 }}
             animate={{
@@ -271,7 +271,7 @@ function SignalRail({ step }: { step: number }) {
                 </span>
               </span>
             </div>
-          </motion.div>
+          </m.div>
         );
       })}
     </div>
@@ -286,7 +286,7 @@ function CaptureParticles({ cycle }: { cycle: number }) {
       style={{ transform: "translateZ(95px)" }}
     >
       {CAPTURE_PARTICLES.map((particle, index) => (
-        <motion.span
+        <m.span
           key={`${cycle}-${index}`}
           initial={{ opacity: 0, x: particle.x, y: particle.y, scale: 0.4 }}
           animate={{
@@ -365,7 +365,7 @@ export function HeroScene() {
           en el mismo nodo, la animación CSS pisa el transform inline del
           tilt y ambos pelean en cada frame. */}
       <div className="motion-safe:animate-float-slow">
-      <motion.div
+      <m.div
         style={{ rotateX, rotateY, transformStyle: "preserve-3d" }}
         className="relative"
       >
@@ -495,7 +495,7 @@ export function HeroScene() {
         {step >= 6 && <CaptureParticles cycle={cycle} />}
         <AnimatePresence>
           {step >= 6 && (
-            <motion.div
+            <m.div
               key={`lead-${cycle}`}
               style={{ transform: "translateZ(70px)" }}
               initial={{ opacity: 0, y: 28, scale: 0.9, filter: "blur(10px)" }}
@@ -523,14 +523,14 @@ export function HeroScene() {
                     <Zap className="size-3 text-nexus-mint" />
                     Lead capturado
                   </span>
-                  <motion.span
+                  <m.span
                     initial={{ opacity: 0, scale: 0.92 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ delay: 0.22, duration: 0.35, ease }}
                     className="rounded-full bg-nexus-mint/15 px-2 py-0.5 text-[11px] font-medium text-nexus-mint ring-1 ring-nexus-mint/20"
                   >
                     Calificado
-                  </motion.span>
+                  </m.span>
                 </div>
                 <p className="mt-2 truncate text-sm font-semibold text-white">
                   Ana · ana@empresa.com
@@ -538,7 +538,7 @@ export function HeroScene() {
                 <div className="mt-3 flex items-center gap-2.5">
                   <div className="relative h-1.5 flex-1 overflow-hidden rounded-full bg-white/10">
                     {/* scaleX en lugar de width: la barra sube sin reflow */}
-                    <motion.div
+                    <m.div
                       initial={{ scaleX: 0 }}
                       animate={{ scaleX: 0.87 }}
                       transition={{ type: "spring", stiffness: 90, damping: 20, mass: 1, delay: 0.2 }}
@@ -549,9 +549,9 @@ export function HeroScene() {
                         aria-hidden
                         className="absolute inset-y-0 -left-8 w-8 bg-white/55 blur-sm motion-safe:animate-shimmer"
                       />
-                    </motion.div>
+                    </m.div>
                   </div>
-                  <motion.span
+                  <m.span
                     initial={{ opacity: 0, y: 6 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.35, delay: 0.45, ease }}
@@ -561,11 +561,11 @@ export function HeroScene() {
                     <span className="text-[11px] font-normal text-white/45">
                       /100
                     </span>
-                  </motion.span>
+                  </m.span>
                 </div>
                 <div className="mt-3 grid grid-cols-3 gap-1.5">
                   {["Alta intención", "Dato válido", "Hoy"].map((item, i) => (
-                    <motion.span
+                    <m.span
                       key={item}
                       initial={{ opacity: 0, y: 8 }}
                       animate={{ opacity: 1, y: 0 }}
@@ -573,11 +573,11 @@ export function HeroScene() {
                       className="truncate rounded-full border border-white/8 bg-white/[0.055] px-2 py-1 text-center text-[9px] font-medium text-white/48"
                     >
                       {item}
-                    </motion.span>
+                    </m.span>
                   ))}
                 </div>
               </div>
-            </motion.div>
+            </m.div>
           )}
         </AnimatePresence>
 
@@ -591,7 +591,7 @@ export function HeroScene() {
             className="h-full w-full rounded-[100%] bg-black/35 blur-2xl motion-safe:animate-enter-fade"
           />
         </div>
-      </motion.div>
+      </m.div>
       </div>
 
       {/* Resplandor de apoyo bajo la escena */}

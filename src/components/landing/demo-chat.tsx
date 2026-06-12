@@ -1,6 +1,6 @@
 "use client";
 
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence, m } from "motion/react";
 import { CheckCheck, RotateCcw, Send, Sparkles, Zap } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
@@ -418,7 +418,7 @@ export function DemoChat() {
               aria-hidden
               className="absolute bottom-3.5 left-3.5 top-3.5 w-px -translate-x-1/2 bg-white/10"
             />
-            <motion.div
+            <m.div
               aria-hidden
               animate={{
                 scaleY: STAGE_ORDER.indexOf(stage) / (STAGE_ORDER.length - 1),
@@ -431,7 +431,7 @@ export function DemoChat() {
               const reached = STAGE_ORDER.indexOf(stage) >= i;
               return (
                 <div key={s} className="relative flex items-center gap-3">
-                  <motion.span
+                  <m.span
                     animate={
                       reached
                         ? { scale: [1, 1.18, 1] }
@@ -446,7 +446,7 @@ export function DemoChat() {
                     )}
                   >
                     {i + 1}
-                  </motion.span>
+                  </m.span>
                   <span
                     className={cn(
                       "text-sm transition-colors duration-500",
@@ -456,7 +456,7 @@ export function DemoChat() {
                     {STAGE_LABELS[s]}
                   </span>
                   {s === "despedida" && stage === "despedida" && (
-                    <motion.span
+                    <m.span
                       initial={{ scale: 0.8, opacity: 0 }}
                       animate={{ scale: 1, opacity: 1 }}
                       transition={{ type: "spring", duration: 0.5, bounce: 0.3 }}
@@ -464,7 +464,7 @@ export function DemoChat() {
                     >
                       <CheckCheck aria-hidden className="size-3.5" /> Score
                       listo
-                    </motion.span>
+                    </m.span>
                   )}
                 </div>
               );
@@ -472,7 +472,7 @@ export function DemoChat() {
             {/* Calificación del lead en vivo: aparece al capturar el email
                 y el Score NEX sube a su valor final al cerrar el flujo */}
             {lead.email && (
-              <motion.div
+              <m.div
                 initial={{ opacity: 0, y: 16, scale: 0.97 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 transition={{ type: "spring", stiffness: 260, damping: 26, mass: 0.9 }}
@@ -488,7 +488,7 @@ export function DemoChat() {
                       <Zap aria-hidden className="size-3 text-nexus-mint" />
                       Score NEX
                     </span>
-                    <motion.span
+                    <m.span
                       key={stage === "despedida" ? "calificado" : "analisis"}
                       initial={{ opacity: 0, scale: 0.9 }}
                       animate={{ opacity: 1, scale: 1 }}
@@ -501,7 +501,7 @@ export function DemoChat() {
                       )}
                     >
                       {stage === "despedida" ? "Calificado" : "En análisis"}
-                    </motion.span>
+                    </m.span>
                   </div>
                   <p className="mt-2 truncate text-sm font-semibold text-white">
                     {lead.name} · {lead.email}
@@ -511,7 +511,7 @@ export function DemoChat() {
                     className="mt-3"
                   />
                   {stage === "despedida" && (
-                    <motion.div
+                    <m.div
                       initial="hidden"
                       animate="visible"
                       variants={{
@@ -520,7 +520,7 @@ export function DemoChat() {
                       className="mt-3 grid grid-cols-3 gap-1.5"
                     >
                       {["Alta intención", "Email válido", "Hoy"].map((chip) => (
-                        <motion.span
+                        <m.span
                           key={chip}
                           variants={{
                             hidden: { opacity: 0, y: 8 },
@@ -538,19 +538,19 @@ export function DemoChat() {
                           className="truncate rounded-full border border-white/8 bg-white/[0.055] px-2 py-1 text-center text-[10px] font-medium text-white/55"
                         >
                           {chip}
-                        </motion.span>
+                        </m.span>
                       ))}
-                    </motion.div>
+                    </m.div>
                   )}
                 </div>
-              </motion.div>
+              </m.div>
             )}
           </Reveal>
         </div>
 
         {/* Widget */}
         <Reveal delay={0.15}>
-          <motion.div
+          <m.div
             onViewportEnter={start}
             viewport={{ amount: 0.4, once: true }}
             whileHover={{ y: -4 }}
@@ -615,10 +615,10 @@ export function DemoChat() {
                 </div>
               )}
               <AnimatePresence initial={false}>
-                {messages.map((m) =>
-                  m.role === "bot" ? (
-                    <motion.div
-                      key={m.id}
+                {messages.map((msg) =>
+                  msg.role === "bot" ? (
+                    <m.div
+                      key={msg.id}
                       initial={{ opacity: 0, y: 12, scale: 0.97 }}
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       transition={{ type: "spring", stiffness: 260, damping: 26, mass: 0.9 }}
@@ -629,15 +629,15 @@ export function DemoChat() {
                       </span>
                       <div className="relative z-10 overflow-hidden rounded-[18px] rounded-bl-[5px] border border-white bg-white/95 px-4 py-2.5 text-[13px] leading-relaxed text-nexus-ink shadow-[0_12px_32px_-18px_rgba(61,26,78,0.45),0_2px_8px_rgba(61,26,78,0.08)] backdrop-blur">
                         <span aria-hidden className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-nexus-lavender/45 to-transparent" />
-                        {m.text}
-                        {m.streaming && (
+                        {msg.text}
+                        {msg.streaming && (
                           <span className="ml-0.5 inline-block h-3.5 w-0.5 animate-pulse bg-nexus-lavender align-middle" />
                         )}
                       </div>
-                    </motion.div>
+                    </m.div>
                   ) : (
-                    <motion.div
-                      key={m.id}
+                    <m.div
+                      key={msg.id}
                       initial={{ opacity: 0, y: 12, scale: 0.97 }}
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       transition={{ type: "spring", stiffness: 260, damping: 26, mass: 0.9 }}
@@ -645,20 +645,20 @@ export function DemoChat() {
                     >
                       <span aria-hidden className="absolute inset-0 bg-[radial-gradient(circle_at_18%_0%,rgba(173,116,195,0.38),transparent_55%)]" />
                       <span aria-hidden className="absolute inset-y-0 -left-16 w-14 bg-white/20 blur-xl motion-safe:animate-shimmer" />
-                      <span className="relative z-10">{m.text}</span>
+                      <span className="relative z-10">{msg.text}</span>
                       <span className="ml-2 inline-flex translate-y-0.5">
                         <CheckCheck
                           aria-hidden
                           className="size-3.5 text-nexus-lavender"
                         />
                       </span>
-                    </motion.div>
+                    </m.div>
                   ),
                 )}
               </AnimatePresence>
 
               {typing && (
-                <motion.div
+                <m.div
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
                   className="flex shrink-0 items-end gap-2 self-start"
@@ -675,14 +675,14 @@ export function DemoChat() {
                       />
                     ))}
                   </div>
-                </motion.div>
+                </m.div>
               )}
             </div>
 
             {/* Quick replies */}
             <AnimatePresence>
               {QUICK_REPLIES[stage].length > 0 && !typing && !streamingNow && (
-                <motion.div
+                <m.div
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: "auto" }}
                   exit={{
@@ -701,7 +701,7 @@ export function DemoChat() {
                       {q}
                     </button>
                   ))}
-                </motion.div>
+                </m.div>
               )}
             </AnimatePresence>
 
@@ -747,7 +747,7 @@ export function DemoChat() {
               </p>
             </div>
             </div>
-          </motion.div>
+          </m.div>
         </Reveal>
       </div>
     </section>

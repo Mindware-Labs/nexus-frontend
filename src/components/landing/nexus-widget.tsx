@@ -1,6 +1,6 @@
 "use client";
 
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence, m } from "motion/react";
 import { CheckCheck, MessageCircle, Send, Sparkles, X, Zap } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
@@ -84,7 +84,7 @@ export function NexusWidget() {
   const openedOnceRef = useRef(false);
   const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
 
-  const streamingNow = messages.some((m) => m.streaming);
+  const streamingNow = messages.some((msg) => msg.streaming);
 
   useEffect(() => {
     const timers = timersRef.current;
@@ -285,7 +285,7 @@ export function NexusWidget() {
       {/* Panel */}
       <AnimatePresence>
         {open && (
-          <motion.div
+          <m.div
             key="panel"
             role="dialog"
             aria-label="Chat con el asistente de Mindware Nexus"
@@ -355,10 +355,10 @@ export function NexusWidget() {
                   </div>
                 )}
                 <AnimatePresence initial={false}>
-                  {messages.map((m) =>
-                    m.kind === "lead" ? (
-                      <motion.div
-                        key={m.id}
+                  {messages.map((msg) =>
+                    msg.kind === "lead" ? (
+                      <m.div
+                        key={msg.id}
                         initial={{ opacity: 0, y: 14, scale: 0.97 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         transition={{ type: "spring", stiffness: 260, damping: 26, mass: 0.9 }}
@@ -397,10 +397,10 @@ export function NexusWidget() {
                             </div>
                           </div>
                         </div>
-                      </motion.div>
-                    ) : m.role === "bot" ? (
-                      <motion.div
-                        key={m.id}
+                      </m.div>
+                    ) : msg.role === "bot" ? (
+                      <m.div
+                        key={msg.id}
                         initial={{ opacity: 0, y: 12, scale: 0.97 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         transition={{ type: "spring", stiffness: 260, damping: 26, mass: 0.9 }}
@@ -414,15 +414,15 @@ export function NexusWidget() {
                             aria-hidden
                             className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-nexus-lavender/45 to-transparent"
                           />
-                          {m.text}
-                          {m.streaming && (
+                          {msg.text}
+                          {msg.streaming && (
                             <span className="ml-0.5 inline-block h-3.5 w-0.5 animate-pulse bg-nexus-lavender align-middle" />
                           )}
                         </div>
-                      </motion.div>
+                      </m.div>
                     ) : (
-                      <motion.div
-                        key={m.id}
+                      <m.div
+                        key={msg.id}
                         initial={{ opacity: 0, y: 12, scale: 0.97 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         transition={{ type: "spring", stiffness: 260, damping: 26, mass: 0.9 }}
@@ -432,20 +432,20 @@ export function NexusWidget() {
                           aria-hidden
                           className="absolute inset-0 bg-[radial-gradient(circle_at_18%_0%,rgba(173,116,195,0.38),transparent_55%)]"
                         />
-                        <span className="relative z-10">{m.text}</span>
+                        <span className="relative z-10">{msg.text}</span>
                         <span className="ml-2 inline-flex translate-y-0.5">
                           <CheckCheck
                             aria-hidden
                             className="size-3.5 text-nexus-lavender"
                           />
                         </span>
-                      </motion.div>
+                      </m.div>
                     ),
                   )}
                 </AnimatePresence>
 
                 {typing && (
-                  <motion.div
+                  <m.div
                     initial={{ opacity: 0, y: 8 }}
                     animate={{ opacity: 1, y: 0 }}
                     className="relative z-10 flex shrink-0 items-end gap-2 self-start"
@@ -462,14 +462,14 @@ export function NexusWidget() {
                         />
                       ))}
                     </div>
-                  </motion.div>
+                  </m.div>
                 )}
               </div>
 
               {/* Quick replies */}
               <AnimatePresence>
                 {QUICK[flow].length > 0 && !typing && !streamingNow && (
-                  <motion.div
+                  <m.div
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: "auto" }}
                     exit={{
@@ -488,7 +488,7 @@ export function NexusWidget() {
                         {q}
                       </button>
                     ))}
-                  </motion.div>
+                  </m.div>
                 )}
               </AnimatePresence>
 
@@ -531,14 +531,14 @@ export function NexusWidget() {
                 </p>
               </div>
             </div>
-          </motion.div>
+          </m.div>
         )}
       </AnimatePresence>
 
       {/* Teaser: mini burbuja del bot, con su avatar */}
       <AnimatePresence>
         {teaser && !open && (
-          <motion.button
+          <m.button
             key="teaser"
             onClick={openWidget}
             initial={{ opacity: 0, y: 10, scale: 0.95 }}
@@ -566,12 +566,12 @@ export function NexusWidget() {
                 ¿Te ayudo a empezar? Pregúntame lo que quieras 👋
               </span>
             </span>
-          </motion.button>
+          </m.button>
         )}
       </AnimatePresence>
 
       {/* Launcher */}
-      <motion.button
+      <m.button
         onClick={() => (open ? setOpen(false) : openWidget())}
         aria-label={open ? "Cerrar el chat" : "Abrir el chat con nuestro bot"}
         aria-expanded={open}
@@ -586,7 +586,7 @@ export function NexusWidget() {
         />
         <AnimatePresence>
           {unread && !open && (
-            <motion.span
+            <m.span
               key="badge"
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
@@ -595,12 +595,12 @@ export function NexusWidget() {
               className="absolute -right-0.5 -top-0.5 grid size-5 place-items-center rounded-full bg-nexus-coral text-[10px] font-bold text-white shadow-md ring-2 ring-white"
             >
               1
-            </motion.span>
+            </m.span>
           )}
         </AnimatePresence>
         <AnimatePresence mode="wait" initial={false}>
           {open ? (
-            <motion.span
+            <m.span
               key="close"
               initial={{ opacity: 0, rotate: -45, scale: 0.8 }}
               animate={{ opacity: 1, rotate: 0, scale: 1 }}
@@ -608,9 +608,9 @@ export function NexusWidget() {
               transition={{ duration: 0.15, ease: "easeOut" }}
             >
               <X aria-hidden className="size-6" />
-            </motion.span>
+            </m.span>
           ) : (
-            <motion.span
+            <m.span
               key="chat"
               initial={{ opacity: 0, rotate: 45, scale: 0.8 }}
               animate={{ opacity: 1, rotate: 0, scale: 1 }}
@@ -618,10 +618,10 @@ export function NexusWidget() {
               transition={{ duration: 0.15, ease: "easeOut" }}
             >
               <MessageCircle aria-hidden className="size-6" />
-            </motion.span>
+            </m.span>
           )}
         </AnimatePresence>
-      </motion.button>
+      </m.button>
     </>
   );
 }

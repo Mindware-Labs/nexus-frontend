@@ -1,6 +1,6 @@
 "use client";
 
-import { motion, useScroll, useTransform } from "motion/react";
+import { m, useScroll, useTransform } from "motion/react";
 import {
   Activity,
   ArrowRight,
@@ -193,7 +193,7 @@ export function Hero() {
       </div>
 
       <div className="mx-auto grid w-full max-w-7xl flex-1 items-center gap-16 px-5 pb-24 pt-32 sm:px-8 lg:grid-cols-[1.1fr_1fr] lg:gap-10 lg:pt-24">
-        <motion.div
+        <m.div
           style={{ y: textY, opacity: fade }}
           className="flex flex-col items-center text-center lg:items-start lg:text-left"
         >
@@ -304,11 +304,11 @@ export function Hero() {
               </div>
             ))}
           </div>
-        </motion.div>
+        </m.div>
 
         {/* El producto en acción: conversación → lead calificado, en loop.
             El parallax de scroll vive en motion; la entrada es CSS puro. */}
-        <motion.div
+        <m.div
           style={{ y: sceneY, opacity: fade }}
           className="pb-12 lg:pb-0"
         >
@@ -318,7 +318,7 @@ export function Hero() {
           >
             <HeroScene />
           </div>
-        </motion.div>
+        </m.div>
       </div>
 
       <a

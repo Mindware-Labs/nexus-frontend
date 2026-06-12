@@ -1,6 +1,6 @@
 "use client";
 
-import { AnimatePresence, motion, type Variants } from "motion/react";
+import { AnimatePresence, m, type Variants } from "motion/react";
 import {
   Building2,
   GraduationCap,
@@ -268,7 +268,7 @@ export function UseCases() {
                   )}
                 >
                   {isActive && (
-                    <motion.div
+                    <m.div
                       layoutId="use-cases-pill"
                       className="absolute inset-0 rounded-full bg-nexus-purple shadow-lg shadow-nexus-purple/25"
                       transition={{ type: "spring", stiffness: 380, damping: 32, mass: 0.8 }}
@@ -287,7 +287,7 @@ export function UseCases() {
         {/* Panel del caso activo: dossier de la industria + el producto en acción */}
         <div className="mx-auto mt-8 max-w-5xl">
           <AnimatePresence mode="wait">
-            <motion.div
+            <m.div
               key={activeIdx}
               id="use-case-panel"
               role="tabpanel"
@@ -313,7 +313,7 @@ export function UseCases() {
                       className="pointer-events-none absolute -right-7 -top-7 size-36 text-nexus-purple/[0.05]"
                     />
 
-                    <motion.div
+                    <m.div
                       variants={swapItem}
                       className="flex items-center gap-3.5"
                     >
@@ -332,16 +332,16 @@ export function UseCases() {
                           {activeCase.highlight}
                         </p>
                       </div>
-                    </motion.div>
+                    </m.div>
 
-                    <motion.p
+                    <m.p
                       variants={swapItem}
                       className="mt-4 text-sm leading-relaxed text-nexus-ink/60"
                     >
                       {activeCase.description}
-                    </motion.p>
+                    </m.p>
 
-                    <motion.div
+                    <m.div
                       variants={swapItem}
                       className="mt-5 rounded-xl bg-nexus-coral/8 p-3.5 ring-1 ring-nexus-coral/15"
                     >
@@ -352,9 +352,9 @@ export function UseCases() {
                       <p className="mt-1 text-[13px] leading-relaxed text-nexus-ink/70">
                         {activeCase.pain}
                       </p>
-                    </motion.div>
+                    </m.div>
 
-                    <motion.div variants={swapItem} className="mb-6 mt-5">
+                    <m.div variants={swapItem} className="mb-6 mt-5">
                       <p className="text-[10px] font-bold uppercase tracking-widest text-nexus-lavender">
                         Captura en cada conversación
                       </p>
@@ -368,9 +368,9 @@ export function UseCases() {
                           </span>
                         ))}
                       </div>
-                    </motion.div>
+                    </m.div>
 
-                    <motion.div
+                    <m.div
                       variants={swapItem}
                       className="mt-auto border-t border-nexus-purple/10 pt-4"
                     >
@@ -389,7 +389,7 @@ export function UseCases() {
                           </div>
                         ))}
                       </div>
-                    </motion.div>
+                    </m.div>
                   </article>
                 </div>
               </TiltCard>
@@ -399,7 +399,7 @@ export function UseCases() {
               <TiltCard className="h-full rounded-[2rem]">
                 <div className="flex h-full flex-col rounded-[2rem] bg-gradient-to-b from-nexus-lavender/45 via-white/15 to-nexus-mint/40 p-px shadow-2xl shadow-nexus-purple/25">
                   <div className="flex h-full flex-col overflow-hidden rounded-[calc(2rem-1px)] bg-nexus-deep">
-                    <motion.div
+                    <m.div
                       variants={swapItem}
                       className="relative flex items-center gap-3 bg-[linear-gradient(180deg,#522566_0%,#3D1A4E_100%)] px-4 py-3.5"
                     >
@@ -423,7 +423,7 @@ export function UseCases() {
                         aria-hidden
                         className="ml-auto size-4 text-white/30"
                       />
-                    </motion.div>
+                    </m.div>
 
                     <div className="relative flex flex-1 flex-col justify-center gap-2.5 px-4 py-5">
                       <div
@@ -437,13 +437,13 @@ export function UseCases() {
                             "linear-gradient(to bottom, transparent, black 20%, black 80%, transparent)",
                         }}
                       />
-                      <motion.div
+                      <m.div
                         variants={swapItem}
                         className="relative max-w-[85%] self-end rounded-[18px] rounded-br-[5px] bg-white/10 px-3.5 py-2 text-[13px] leading-relaxed text-white ring-1 ring-white/10"
                       >
                         {activeCase.question}
-                      </motion.div>
-                      <motion.div
+                      </m.div>
+                      <m.div
                         variants={swapItem}
                         className="relative flex max-w-[90%] items-end gap-2 self-start"
                       >
@@ -453,9 +453,9 @@ export function UseCases() {
                         <div className="rounded-[18px] rounded-bl-[5px] bg-white px-3.5 py-2 text-[13px] leading-relaxed text-nexus-ink shadow-[0_12px_32px_-18px_rgba(61,26,78,0.6)]">
                           {activeCase.answer}
                         </div>
-                      </motion.div>
+                      </m.div>
                       {/* Quick replies: las opciones que el visitante tocaría */}
-                      <motion.div
+                      <m.div
                         variants={swapItem}
                         className="relative ml-8 flex flex-wrap gap-1.5"
                       >
@@ -467,10 +467,10 @@ export function UseCases() {
                             {reply}
                           </span>
                         ))}
-                      </motion.div>
+                      </m.div>
                     </div>
 
-                    <motion.div variants={swapItem} className="px-3.5 pb-3.5">
+                    <m.div variants={swapItem} className="px-3.5 pb-3.5">
                       <div className="relative overflow-hidden rounded-2xl bg-nexus-ink/40 p-3.5 ring-1 ring-white/10 backdrop-blur-xl">
                         <span
                           aria-hidden
@@ -527,11 +527,11 @@ export function UseCases() {
                           className="mt-3"
                         />
                       </div>
-                    </motion.div>
+                    </m.div>
                   </div>
                 </div>
               </TiltCard>
-            </motion.div>
+            </m.div>
           </AnimatePresence>
         </div>
       </div>

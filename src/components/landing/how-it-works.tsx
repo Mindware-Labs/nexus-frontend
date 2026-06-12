@@ -2,7 +2,7 @@
 
 import {
   animate,
-  motion,
+  m,
   useInView,
   useMotionValue,
   useScroll,
@@ -112,7 +112,7 @@ function LeadScoreGauge() {
           strokeOpacity="0.1"
           strokeWidth="5"
         />
-        <motion.circle
+        <m.circle
           cx="32"
           cy="32"
           r="27"
@@ -124,9 +124,9 @@ function LeadScoreGauge() {
         />
       </svg>
       <div className="absolute flex flex-col items-center">
-        <motion.span className="text-lg font-bold leading-none tabular-nums text-nexus-ink">
+        <m.span className="text-lg font-bold leading-none tabular-nums text-nexus-ink">
           {rounded}
-        </motion.span>
+        </m.span>
         <span className="mt-0.5 text-[7px] font-bold uppercase tracking-widest text-nexus-mint">
           Score
         </span>
@@ -155,7 +155,7 @@ export function HowItWorks() {
         <div ref={lineRef} className="relative mt-14">
           {/* Línea de progreso que se dibuja con el scroll; los huecos entre
               tarjetas dejan ver los segmentos a la altura de los iconos */}
-          <motion.div
+          <m.div
             aria-hidden
             style={{ scaleX: lineScale }}
             className="absolute inset-x-0 top-12 hidden h-px origin-left bg-gradient-to-r from-nexus-purple via-nexus-lavender to-nexus-mint lg:block"

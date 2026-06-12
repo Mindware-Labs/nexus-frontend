@@ -1,6 +1,6 @@
 "use client";
 
-import { motion, useMotionValue, useTransform } from "motion/react";
+import { m, useMotionValue, useTransform } from "motion/react";
 import { Check, Minus, Zap } from "lucide-react";
 import { useRef, useState } from "react";
 import { cn } from "@/lib/utils";
@@ -76,7 +76,7 @@ function CTAButton({ href, className, children }: { href: string; className?: st
       className={cn("group relative overflow-hidden rounded-full py-3 text-center text-sm font-medium transition-[transform,background-color] duration-200 ease-out hover:scale-[1.03] active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-nexus-lavender", className)}
     >
       <span className="relative z-10">{children}</span>
-      <motion.div
+      <m.div
         aria-hidden
         className="pointer-events-none absolute inset-0 rounded-[inherit] opacity-0 transition-opacity duration-300 group-hover:opacity-100"
         style={{
@@ -122,7 +122,7 @@ export function Pricing() {
                     )}
                   >
                     {active && (
-                      <motion.span
+                      <m.span
                         layoutId="billing-pill"
                         className="absolute inset-0 rounded-full bg-nexus-purple"
                         transition={{
@@ -158,7 +158,7 @@ export function Pricing() {
             return (
               <RevealItem key={tier.name} className="h-full">
                 <TiltCard className="h-full rounded-[2.5rem]">
-                <motion.article
+                <m.article
                   whileHover={{ y: -8 }}
                   transition={{ type: "spring", stiffness: 220, damping: 20 }}
                   className={cn(
@@ -205,7 +205,7 @@ export function Pricing() {
                     </p>
 
                     <div className="mt-6 flex items-baseline gap-1.5">
-                      <motion.span
+                      <m.span
                         key={price}
                         initial={{ opacity: 0, y: -10 }}
                         animate={{ opacity: 1, y: 0 }}
@@ -213,7 +213,7 @@ export function Pricing() {
                         className="text-5xl font-bold tracking-tight tabular-nums"
                       >
                         ${price}
-                      </motion.span>
+                      </m.span>
                       <span
                         className={cn(
                           "text-sm",
@@ -274,7 +274,7 @@ export function Pricing() {
                       Empezar con {tier.name}
                     </CTAButton>
                   </div>
-                </motion.article>
+                </m.article>
                 </TiltCard>
               </RevealItem>
             );

@@ -1,7 +1,7 @@
 "use client";
 
 import {
-  motion,
+  m,
   useMotionValue,
   useSpring,
   useTransform,
@@ -50,7 +50,7 @@ export function TiltCard({
 
   return (
     <div style={{ perspective: 1000 }} className={className}>
-      <motion.div
+      <m.div
         ref={ref}
         onMouseMove={onMouseMove}
         onMouseLeave={onMouseLeave}
@@ -58,7 +58,7 @@ export function TiltCard({
         className="group relative h-full rounded-[inherit] will-change-transform"
       >
         {children}
-        <motion.div
+        <m.div
           aria-hidden
           className="pointer-events-none absolute inset-0 rounded-[inherit] opacity-0 transition-opacity duration-300 group-hover:opacity-100"
           style={{
@@ -69,7 +69,7 @@ export function TiltCard({
             ),
           }}
         />
-      </motion.div>
+      </m.div>
     </div>
   );
 }
