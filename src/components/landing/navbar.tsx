@@ -118,6 +118,12 @@ export function Navbar() {
         </div>
 
         <div className="hidden items-center gap-3 md:flex">
+          <Link
+            href="/login"
+            className="rounded-full border border-white/20 px-5 py-2 text-sm font-medium text-white/80 transition-[transform,background-color,border-color] duration-200 ease-out hover:scale-[1.04] hover:border-white/40 hover:bg-white/8 hover:text-white active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-nexus-lavender"
+          >
+            Iniciar sesión
+          </Link>
           <a
             href="#contacto"
             className="rounded-full bg-white px-5 py-2 text-sm font-medium text-nexus-deep shadow-lg shadow-black/10 transition-[transform,background-color] duration-200 ease-out hover:scale-[1.04] hover:bg-nexus-lilac active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-nexus-lavender"
@@ -165,10 +171,17 @@ export function Navbar() {
                   {l.label}
                 </a>
               ))}
+              <Link
+                href="/login"
+                onClick={() => setOpen(false)}
+                className="mt-2 rounded-xl border border-white/20 px-4 py-3 text-center text-sm font-medium text-white/80"
+              >
+                Iniciar sesión
+              </Link>
               <a
                 href="#contacto"
                 onClick={() => setOpen(false)}
-                className="mt-2 rounded-xl bg-white px-4 py-3 text-center text-sm font-medium text-nexus-deep"
+                className="mt-1 rounded-xl bg-white px-4 py-3 text-center text-sm font-medium text-nexus-deep"
               >
                 Solicitar acceso
               </a>
