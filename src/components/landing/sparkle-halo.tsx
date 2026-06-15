@@ -48,8 +48,8 @@ function mulberry32(seed: number) {
  * Halo de partículas dispersas (estilo confeti de luz): cientos de
  * motas de tamaño variable concentradas en una banda elíptica alrededor
  * del punto focal, que derivan en órbita lenta y titilan de forma
- * individual. A diferencia de DotField (retícula uniforme), aquí la
- * distribución es orgánica: densa junto al anillo y dispersándose hacia
+ * individual. La distribución es orgánica (no una retícula uniforme):
+ * densa junto al anillo y dispersándose hacia
  * afuera, como un remolino de polvo brillante. El cursor repele las
  * motas con física de resorte y las enciende a su paso. El loop solo
  * corre con la sección visible y la pestaña activa; con
@@ -156,7 +156,7 @@ export function SparkleHalo({
         const oy = cy + Math.sin(angle) * ry * radius;
 
         /* Repulsión del cursor con caída cuadrática + resorte de regreso
-           a la órbita y fricción (misma física que DotField) */
+           a la órbita y fricción */
         const dx = ox + s.offX - mouse.x;
         const dy = oy + s.offY - mouse.y;
         const dist = Math.hypot(dx, dy);

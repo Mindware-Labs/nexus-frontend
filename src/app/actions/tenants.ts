@@ -26,11 +26,51 @@ export interface TenantOption {
 }
 
 type BackendError = { message: string | string[] }
+const TENANT_PLAN_VALUES = ['trial', 'starter', 'pro', 'enterprise'] as const
 
 function extractMessage(body: BackendError, fallback: string): string {
   const msg = body?.message
   if (Array.isArray(msg)) return msg[0] ?? fallback
   return msg ?? fallback
+}
+
+function toTenantPlan(value: unknown): Tenant['plan'] {
+  return TENANT_PLAN_VALUES.includes(value as Tenant['plan']) ? value as Tenant['plan'] : 'trial'
+}
+
+function toTenant(value: unknown): Tenant | null {
+  if (!value || typeof value !== 'object') return null
+
+  const row = value as Record<string, unknown>
+  const tenantId = Number(row.tenant_id)
+
+  if (!Number.isFinite(tenantId)) return null
+
+  return {
+    tenant_id: tenantId,
+    name: String(row.name ?? ''),
+    slug: String(row.slug ?? ''),
+    plan: toTenantPlan(row.plan),
+    is_active: row.is_active === true,
+    created_at: String(row.created_at ?? ''),
+    updated_at: String(row.updated_at ?? ''),
+  }
+}
+
+function toTenantOption(value: unknown): TenantOption | null {
+  if (!value || typeof value !== 'object') return null
+
+  const row = value as Record<string, unknown>
+  const tenantId = Number(row.tenant_id)
+
+  if (!Number.isFinite(tenantId)) return null
+
+  return {
+    tenant_id: tenantId,
+    name: String(row.name ?? ''),
+    plan: toTenantPlan(row.plan),
+    is_active: row.is_active === true,
+  }
 }
 
 export async function createTenantAction(
@@ -104,7 +144,12 @@ export async function listTenants(): Promise<Tenant[]> {
   try {
     const res = await backendFetch('/tenants')
     if (!res.ok) return []
-    return res.json()
+    const data: unknown = await res.json()
+    if (!Array.isArray(data)) return []
+    return data.flatMap((row) => {
+      const tenant = toTenant(row)
+      return tenant ? [tenant] : []
+    })
   } catch {
     return []
   }
@@ -114,7 +159,12 @@ export async function listActiveTenants(): Promise<TenantOption[]> {
   try {
     const res = await backendFetch('/tenants/active')
     if (!res.ok) return []
-    return res.json()
+    const data: unknown = await res.json()
+    if (!Array.isArray(data)) return []
+    return data.flatMap((row) => {
+      const tenant = toTenantOption(row)
+      return tenant ? [tenant] : []
+    })
   } catch {
     return []
   }

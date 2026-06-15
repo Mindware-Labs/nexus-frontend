@@ -49,13 +49,14 @@ export function EditCustomerDialog({ customer, tenantInactive = false }: Props) 
     }
   }, [state])
 
-  useEffect(() => {
-    if (open) {
+  function handleOpenChange(nextOpen: boolean) {
+    setOpen(nextOpen)
+    if (nextOpen) {
       setSelectedActive(String(customer.is_active))
       setNameError(undefined)
       setEmailError(undefined)
     }
-  }, [open, customer])
+  }
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -83,7 +84,7 @@ export function EditCustomerDialog({ customer, tenantInactive = false }: Props) 
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button variant="ghost" size="icon-sm" className="text-muted-foreground hover:text-foreground">
           <Pencil className="size-3.5" />

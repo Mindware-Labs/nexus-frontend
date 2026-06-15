@@ -2,7 +2,8 @@ import { redirect } from "next/navigation"
 import { AlertCircle, Users } from "lucide-react"
 import { getSessionUser } from "@/lib/session"
 import { listCustomers } from "@/app/actions/customers"
-import { listActiveTenants } from "@/app/actions/tenants"
+import { listActiveTenants, listTenants } from "@/app/actions/tenants"
+import { PLAN_LABELS } from "@/lib/schemas/tenants"
 import { AddCustomerDialog } from "./add-customer-dialog"
 import { EditCustomerDialog } from "./edit-customer-dialog"
 import { Badge } from "@/components/ui/badge"
@@ -27,9 +28,10 @@ export default async function CustomersPage() {
   const user = await getSessionUser()
   if (!user || user.role !== "owner") redirect("/login")
 
-  const [customers, tenants] = await Promise.all([
+  const [customers, activeTenants, tenants] = await Promise.all([
     listCustomers(),
     listActiveTenants(),
+    listTenants(),
   ])
 
   const tenantMap = new Map(tenants.map((t) => [t.tenant_id, t]))
@@ -44,7 +46,7 @@ export default async function CustomersPage() {
             Gestiona las cuentas de cliente del sistema
           </p>
         </div>
-        <AddCustomerDialog tenants={tenants} />
+        <AddCustomerDialog tenants={activeTenants} />
       </div>
 
       <div className="flex items-center gap-3 rounded-xl border bg-muted/30 px-4 py-3">
@@ -79,6 +81,7 @@ export default async function CustomersPage() {
                 <TableHead>Nombre</TableHead>
                 <TableHead>Correo electrónico</TableHead>
                 <TableHead>Tenant</TableHead>
+                <TableHead>Plan</TableHead>
                 <TableHead>Fecha de alta</TableHead>
                 <TableHead>Estado</TableHead>
                 <TableHead className="w-10" />
@@ -99,6 +102,13 @@ export default async function CustomersPage() {
                         </Badge>
                       ) : (
                         <span className="text-xs text-muted-foreground/60">—</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {tenant ? (
+                        <Badge variant="outline">{PLAN_LABELS[tenant.plan]}</Badge>
+                      ) : (
+                        <span className="text-xs text-muted-foreground/60">-</span>
                       )}
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">

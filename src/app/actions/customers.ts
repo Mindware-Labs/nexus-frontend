@@ -30,6 +30,26 @@ function generatePassword(): string {
   return randomBytes(12).toString('base64url')
 }
 
+function toCustomer(value: unknown): Customer | null {
+  if (!value || typeof value !== 'object') return null
+
+  const row = value as Record<string, unknown>
+  const id = Number(row.id)
+  const tenantId = row.tenant_id === null || row.tenant_id === undefined ? null : Number(row.tenant_id)
+
+  if (!Number.isFinite(id)) return null
+  if (tenantId !== null && !Number.isFinite(tenantId)) return null
+
+  return {
+    id,
+    name: String(row.name ?? ''),
+    email: String(row.email ?? ''),
+    tenant_id: tenantId,
+    is_active: row.is_active === true,
+    created_at: String(row.created_at ?? ''),
+  }
+}
+
 export async function createCustomerAction(
   _prev: CustomerActionState,
   formData: FormData,
@@ -118,7 +138,12 @@ export async function listCustomers(): Promise<Customer[]> {
   try {
     const res = await backendFetch('/auth/customers')
     if (!res.ok) return []
-    return res.json()
+    const data: unknown = await res.json()
+    if (!Array.isArray(data)) return []
+    return data.flatMap((row) => {
+      const customer = toCustomer(row)
+      return customer ? [customer] : []
+    })
   } catch {
     return []
   }
