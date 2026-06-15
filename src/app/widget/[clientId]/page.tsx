@@ -53,8 +53,12 @@ function Avatar({ mode, value, color, size = 36 }: { mode: AvatarMode; value: st
   )
 }
 
-export default function WidgetPage({ params }: { params: { clientId: string } }) {
-  const { clientId } = params
+export default function WidgetPage({ params }: { params: Promise<{ clientId: string }> }) {
+  const [clientId, setClientId] = useState<string | null>(null)
+
+  useEffect(() => {
+    params.then(({ clientId }) => setClientId(clientId))
+  }, [params])
   const [config, setConfig] = useState<WidgetConfig | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [messages, setMessages] = useState<Message[]>([])
@@ -64,8 +68,12 @@ export default function WidgetPage({ params }: { params: { clientId: string } })
   const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
+    if (!clientId) return
     fetch(`${BACKEND}/bot/widget/${clientId}/config`)
-      .then((r) => r.json())
+      .then((r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`)
+        return r.json()
+      })
       .then((data: WidgetConfig) => {
         setConfig(data)
         if (data.welcomeMessage) {
