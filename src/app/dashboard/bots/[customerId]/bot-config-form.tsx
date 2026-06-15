@@ -340,6 +340,7 @@ export function BotConfigForm({ config, customerId }: { config: BotConfig; custo
   const [widgetPrimaryColor, setWidgetPrimaryColor] = useState(config.widgetPrimaryColor)
   const [widgetPosition, setWidgetPosition] = useState(config.widgetPosition)
   const [launcherText, setLauncherText] = useState(config.launcherText)
+  const [websiteUrl, setWebsiteUrl] = useState(config.websiteUrl)
   const [isBotActive, setIsBotActive] = useState(config.isBotActive)
 
   // ── Save ────────────────────────────────────────────────────────────────────
@@ -368,6 +369,7 @@ export function BotConfigForm({ config, customerId }: { config: BotConfig; custo
         launcherText,
         welcomeMessage,
         fallbackMessage,
+        websiteUrl,
       })
       setSaveStatus(result.status === 'success' ? 'success' : 'error')
       setSaveMsg(result.status === 'error' ? result.message : '')
@@ -697,6 +699,18 @@ export function BotConfigForm({ config, customerId }: { config: BotConfig; custo
 
       {/* BOT-19 / BOT-23: Integración */}
       <Section id="integracion" title="Integración del widget">
+        <Field
+          label="URL del sitio web del cliente"
+          hint="El backend aceptará automáticamente peticiones CORS desde esta URL. Debe incluir protocolo: https://cliente.com"
+        >
+          <Input
+            type="url"
+            value={websiteUrl}
+            onChange={(e) => setWebsiteUrl(e.target.value)}
+            maxLength={500}
+            placeholder="https://sitio-del-cliente.com"
+          />
+        </Field>
         <div className="flex items-center gap-3 rounded-lg bg-muted/40 px-3 py-2.5">
           <Bot className="size-4 shrink-0 text-muted-foreground" />
           <div className="min-w-0 flex-1">

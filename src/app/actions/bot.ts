@@ -39,6 +39,7 @@ export interface BotConfig {
   welcomeMessage: string
   fallbackMessage: string
   isBotActive: boolean
+  websiteUrl: string
   snippet: string
   widgetUrl: string
 }
