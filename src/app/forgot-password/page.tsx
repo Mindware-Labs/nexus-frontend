@@ -4,6 +4,7 @@ import {
   AlertCircle,
   ArrowLeft,
   Clock,
+  Lock,
   Loader2,
   MailCheck,
   Sparkles,
@@ -17,6 +18,7 @@ import {
   type ActionState,
 } from "@/app/actions/auth";
 import { ForgotPasswordSchema, VerifyResetCodeSchema } from "@/lib/schemas/auth";
+import { BLOCKED_KEY } from "@/app/login/page";
 
 const RL_FP_KEY = "nx_rl_fp_expires";
 const RL_RC_KEY = "nx_rl_rc_expires";
@@ -26,6 +28,24 @@ function ErrorBanner({ message }: { message: string }) {
     <div className="flex items-start gap-2.5 rounded-xl border border-nexus-coral/30 bg-nexus-coral/10 px-4 py-3 text-sm text-nexus-coral">
       <AlertCircle className="mt-0.5 size-4 shrink-0" />
       <span>{message}</span>
+    </div>
+  );
+}
+
+function BlockedBanner({ message }: { message: string }) {
+  return (
+    <div className="flex flex-col gap-3 rounded-xl border border-amber-400/30 bg-amber-400/10 px-4 py-3.5">
+      <div className="flex items-start gap-2.5 text-sm text-amber-300">
+        <Lock className="mt-0.5 size-4 shrink-0" />
+        <span>{message}</span>
+      </div>
+      <p className="text-xs text-amber-300/60">
+        No es posible recuperar el acceso mientras la cuenta esté desactivada.{" "}
+        <Link href="/login" className="underline underline-offset-2 hover:text-amber-300/90 transition-colors">
+          Volver al inicio de sesión
+        </Link>
+        .
+      </p>
     </div>
   );
 }
@@ -79,6 +99,21 @@ function useRateLimit(storageKey: string, state: ActionState) {
 }
 
 export default function ForgotPasswordPage() {
+  /* ── blocked account state ──────────────────────────────────────── */
+  const [isBlocked, setIsBlocked] = useState(false);
+  const [blockedMessage, setBlockedMessage] = useState("");
+
+  useEffect(() => {
+    try {
+      const stored = sessionStorage.getItem(BLOCKED_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored) as { message: string };
+        setIsBlocked(true);
+        setBlockedMessage(parsed.message);
+      }
+    } catch {}
+  }, []);
+
   /* ── Step 1: email ── */
   const [emailState, emailAction, isEmailPending] = useActionState<ActionState, FormData>(
     forgotPasswordAction,
@@ -88,6 +123,17 @@ export default function ForgotPasswordPage() {
   const [submittedEmail, setSubmittedEmail] = useState("");
   const [isEmailSubmitting, setIsEmailSubmitting] = useState(false);
   const fpRL = useRateLimit(RL_FP_KEY, emailState);
+
+  // Persistir bloqueo si el backend lo indica desde forgot-password
+  useEffect(() => {
+    if (emailState.status === "blocked") {
+      try {
+        sessionStorage.setItem(BLOCKED_KEY, JSON.stringify({ message: emailState.message }));
+      } catch {}
+      setIsBlocked(true);
+      setBlockedMessage(emailState.message);
+    }
+  }, [emailState]);
 
   /* ── Step 2: code ── */
   const [codeState, codeAction, isCodePending] = useActionState<ActionState, FormData>(
@@ -108,9 +154,11 @@ export default function ForgotPasswordPage() {
     if (codeState.status !== "idle") setIsCodeSubmitting(false);
   }, [codeState]);
 
+  const emailFormDisabled = isEmailPending || isEmailSubmitting || fpRL.isLimited || isBlocked;
+
   function handleEmailSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (fpRL.isLimited || isEmailSubmitting || isEmailPending) return;
+    if (emailFormDisabled) return;
     const fd = new FormData(e.currentTarget);
     const result = ForgotPasswordSchema.safeParse({ email: fd.get("email") });
     if (!result.success) {
@@ -179,7 +227,9 @@ export default function ForgotPasswordPage() {
             </div>
 
             <form onSubmit={handleEmailSubmit} className="space-y-5">
-              {fpRL.isLimited ? (
+              {isBlocked ? (
+                <BlockedBanner message={blockedMessage} />
+              ) : fpRL.isLimited ? (
                 <RateLimitBanner seconds={fpRL.seconds} />
               ) : emailState.status === "error" ? (
                 <ErrorBanner message={emailState.message} />
@@ -195,9 +245,11 @@ export default function ForgotPasswordPage() {
                   type="email"
                   autoComplete="email"
                   placeholder="tu@empresa.com"
+                  disabled={emailFormDisabled}
                   className={cn(
                     "w-full rounded-xl border bg-white/[0.07] px-4 py-3 text-sm text-white placeholder:text-white/35",
                     "transition-all duration-200 outline-none focus:bg-white/[0.1] focus:ring-2",
+                    "disabled:cursor-not-allowed disabled:opacity-40 disabled:select-none",
                     emailError
                       ? "border-nexus-coral/50 focus:ring-nexus-coral/30"
                       : "border-white/15 focus:border-nexus-lavender/50 focus:ring-nexus-lavender/20",
@@ -208,11 +260,16 @@ export default function ForgotPasswordPage() {
 
               <button
                 type="submit"
-                disabled={isEmailPending || isEmailSubmitting || fpRL.isLimited}
+                disabled={emailFormDisabled}
                 className="flex w-full items-center justify-center gap-2 rounded-xl bg-nexus-purple px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-nexus-purple/30 transition-all duration-200 hover:bg-nexus-purple/85 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {(isEmailPending || isEmailSubmitting) && <Loader2 className="size-4 animate-spin" />}
-                Enviar código
+                {isBlocked ? (
+                  <>
+                    <Lock className="size-4" />
+                    Acceso bloqueado
+                  </>
+                ) : "Enviar código"}
               </button>
             </form>
           </>

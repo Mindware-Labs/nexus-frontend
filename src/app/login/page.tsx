@@ -7,6 +7,7 @@ import {
   Clock,
   Eye,
   EyeOff,
+  Lock,
   Loader2,
   ShieldCheck,
   Sparkles,
@@ -17,10 +18,11 @@ import { cn } from "@/lib/utils";
 import { loginAction, verify2FAAction, type ActionState } from "@/app/actions/auth";
 import { LoginSchema, TwoFASchema } from "@/lib/schemas/auth";
 
-/* ─── sessionStorage key ────────────────────────────────────────────── */
+/* ─── sessionStorage keys ───────────────────────────────────────────── */
 const RL_KEY = "nx_rl_expires";
+export const BLOCKED_KEY = "nx_acc_blocked";
 
-/* ─── helpers ───────────────────────────────────────────────────────── */
+/* ─── banners ───────────────────────────────────────────────────────── */
 function ErrorBanner({ message }: { message: string }) {
   return (
     <div className="flex items-start gap-2.5 rounded-xl border border-nexus-coral/30 bg-nexus-coral/10 px-4 py-3 text-sm text-nexus-coral">
@@ -30,14 +32,31 @@ function ErrorBanner({ message }: { message: string }) {
   );
 }
 
+function BlockedBanner({ message }: { message: string }) {
+  return (
+    <div className="flex flex-col gap-3 rounded-xl border border-amber-400/30 bg-amber-400/10 px-4 py-3.5">
+      <div className="flex items-start gap-2.5 text-sm text-amber-300">
+        <Lock className="mt-0.5 size-4 shrink-0" />
+        <span>{message}</span>
+      </div>
+      <p className="text-xs text-amber-300/60">
+        El acceso ha sido bloqueado. Para más información,{" "}
+        <Link
+          href="/"
+          className="underline underline-offset-2 hover:text-amber-300/90 transition-colors"
+        >
+          contacta con el administrador
+        </Link>
+        .
+      </p>
+    </div>
+  );
+}
+
 function RateLimitBanner({ seconds }: { seconds: number }) {
   const mins = Math.floor(seconds / 60);
   const secs = seconds % 60;
-  const timeStr =
-    mins > 0
-      ? `${mins}:${String(secs).padStart(2, "0")}`
-      : `${secs}s`;
-
+  const timeStr = mins > 0 ? `${mins}:${String(secs).padStart(2, "0")}` : `${secs}s`;
   return (
     <div className="flex items-center gap-2.5 rounded-xl border border-amber-400/30 bg-amber-400/10 px-4 py-3 text-sm text-amber-300">
       <Clock className="size-4 shrink-0" />
@@ -52,66 +71,6 @@ function RateLimitBanner({ seconds }: { seconds: number }) {
 function FieldError({ error }: { error?: string }) {
   if (!error) return null;
   return <p className="mt-1.5 text-xs text-nexus-coral">{error}</p>;
-}
-
-function InputField({
-  id,
-  name,
-  type,
-  label,
-  placeholder,
-  autoComplete,
-  error,
-}: {
-  id: string;
-  name: string;
-  type: "email" | "password" | "text";
-  label: string;
-  placeholder: string;
-  autoComplete?: string;
-  error?: string;
-}) {
-  const [show, setShow] = useState(false);
-  const isPassword = type === "password";
-  const inputType = isPassword ? (show ? "text" : "password") : type;
-
-  return (
-    <div>
-      <label htmlFor={id} className="mb-1.5 block text-sm font-medium text-white/80">
-        {label}
-      </label>
-      <div className="relative">
-        <input
-          id={id}
-          name={name}
-          type={inputType}
-          autoComplete={autoComplete}
-          placeholder={placeholder}
-          className={cn(
-            "w-full rounded-xl border bg-white/[0.07] px-4 py-3 text-sm text-white placeholder:text-white/35",
-            "transition-all duration-200 outline-none",
-            "focus:bg-white/[0.1] focus:ring-2",
-            error
-              ? "border-nexus-coral/50 focus:ring-nexus-coral/30"
-              : "border-white/15 focus:border-nexus-lavender/50 focus:ring-nexus-lavender/20",
-            isPassword && "pr-11",
-          )}
-        />
-        {isPassword && (
-          <button
-            type="button"
-            onClick={() => setShow((v) => !v)}
-            tabIndex={-1}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 transition-colors hover:text-white/70"
-            aria-label={show ? "Ocultar contraseña" : "Mostrar contraseña"}
-          >
-            {show ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-          </button>
-        )}
-      </div>
-      <FieldError error={error} />
-    </div>
-  );
 }
 
 /* ─── Step 1: Credentials ─────────────────────────────────────────── */
@@ -131,10 +90,40 @@ function CredentialsForm({
   rlSeconds: number;
 }) {
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
+  const [showPass, setShowPass] = useState(false);
+
+  /* ── blocked state — vive aquí, igual que en forgot-password ── */
+  const [isBlocked, setIsBlocked] = useState(false);
+  const [blockedMessage, setBlockedMessage] = useState("");
+
+  // Restaurar desde sessionStorage al montar (navegó a landing y volvió)
+  useEffect(() => {
+    try {
+      const stored = sessionStorage.getItem(BLOCKED_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored) as { message: string };
+        setIsBlocked(true);
+        setBlockedMessage(parsed.message);
+      }
+    } catch {}
+  }, []);
+
+  // Persistir cuando el servidor confirma el bloqueo
+  useEffect(() => {
+    if (state.status === "blocked") {
+      try {
+        sessionStorage.setItem(BLOCKED_KEY, JSON.stringify({ message: state.message }));
+      } catch {}
+      setIsBlocked(true);
+      setBlockedMessage(state.message);
+    }
+  }, [state]);
+
+  const disabled = isPending || isRateLimited || isBlocked;
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (isRateLimited) return;
+    if (disabled) return;
     const fd = new FormData(e.currentTarget);
     const result = LoginSchema.safeParse({
       email: fd.get("email"),
@@ -167,46 +156,97 @@ function CredentialsForm({
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-5">
-        {isRateLimited
-          ? <RateLimitBanner seconds={rlSeconds} />
-          : state.status === "error" && <ErrorBanner message={state.message} />}
+        {isBlocked ? (
+          <BlockedBanner message={blockedMessage} />
+        ) : isRateLimited ? (
+          <RateLimitBanner seconds={rlSeconds} />
+        ) : state.status === "error" ? (
+          <ErrorBanner message={state.message} />
+        ) : null}
 
-        <InputField
-          id="email"
-          name="email"
-          type="email"
-          label="Correo electrónico"
-          placeholder="tu@empresa.com"
-          autoComplete="email"
-          error={fieldErrors.email}
-        />
-        <InputField
-          id="password"
-          name="password"
-          type="password"
-          label="Contraseña"
-          placeholder="••••••••"
-          autoComplete="current-password"
-          error={fieldErrors.password}
-        />
+        {/* Email */}
+        <div>
+          <label htmlFor="email" className="mb-1.5 block text-sm font-medium text-white/80">
+            Correo electrónico
+          </label>
+          <input
+            id="email"
+            name="email"
+            type="email"
+            autoComplete="email"
+            placeholder="tu@empresa.com"
+            disabled={disabled}
+            className={cn(
+              "w-full rounded-xl border bg-white/[0.07] px-4 py-3 text-sm text-white placeholder:text-white/35",
+              "transition-all duration-200 outline-none focus:bg-white/[0.1] focus:ring-2",
+              "disabled:cursor-not-allowed disabled:opacity-40 disabled:select-none",
+              fieldErrors.email
+                ? "border-nexus-coral/50 focus:ring-nexus-coral/30"
+                : "border-white/15 focus:border-nexus-lavender/50 focus:ring-nexus-lavender/20",
+            )}
+          />
+          {fieldErrors.email && <p className="mt-1.5 text-xs text-nexus-coral">{fieldErrors.email}</p>}
+        </div>
+
+        {/* Password */}
+        <div>
+          <label htmlFor="password" className="mb-1.5 block text-sm font-medium text-white/80">
+            Contraseña
+          </label>
+          <div className="relative">
+            <input
+              id="password"
+              name="password"
+              type={showPass ? "text" : "password"}
+              autoComplete="current-password"
+              placeholder="••••••••"
+              disabled={disabled}
+              className={cn(
+                "w-full rounded-xl border bg-white/[0.07] px-4 py-3 pr-11 text-sm text-white placeholder:text-white/35",
+                "transition-all duration-200 outline-none focus:bg-white/[0.1] focus:ring-2",
+                "disabled:cursor-not-allowed disabled:opacity-40 disabled:select-none",
+                fieldErrors.password
+                  ? "border-nexus-coral/50 focus:ring-nexus-coral/30"
+                  : "border-white/15 focus:border-nexus-lavender/50 focus:ring-nexus-lavender/20",
+              )}
+            />
+            <button
+              type="button"
+              tabIndex={-1}
+              disabled={disabled}
+              onClick={() => setShowPass((v) => !v)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 transition-colors hover:text-white/70 disabled:opacity-40"
+              aria-label={showPass ? "Ocultar contraseña" : "Mostrar contraseña"}
+            >
+              {showPass ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+            </button>
+          </div>
+          {fieldErrors.password && <p className="mt-1.5 text-xs text-nexus-coral">{fieldErrors.password}</p>}
+        </div>
 
         <button
           type="submit"
-          disabled={isPending || isRateLimited}
+          disabled={disabled}
           className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-nexus-purple px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-nexus-purple/30 transition-all duration-200 hover:bg-nexus-purple/85 hover:shadow-nexus-purple/40 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {isPending && <Loader2 className="size-4 animate-spin" />}
-          Iniciar sesión
+          {isPending ? (
+            <Loader2 className="size-4 animate-spin" />
+          ) : isBlocked ? (
+            <Lock className="size-4" />
+          ) : null}
+          {isBlocked ? "Acceso bloqueado" : "Iniciar sesión"}
         </button>
 
-        <p className="text-center text-sm text-white/45">
-          <Link
-            href="/forgot-password"
-            className="text-nexus-lavender transition-colors hover:text-nexus-lavender/80 focus-visible:outline-none focus-visible:underline"
-          >
-            ¿Olvidaste tu contraseña?
-          </Link>
-        </p>
+        {!isBlocked && (
+          <p className="text-center text-sm text-white/45">
+            <Link
+              href="/forgot-password"
+              className="text-nexus-lavender transition-colors hover:text-nexus-lavender/80 focus-visible:outline-none focus-visible:underline"
+            >
+              ¿Olvidaste tu contraseña?
+            </Link>
+          </p>
+        )}
       </form>
     </m.div>
   );
@@ -295,7 +335,7 @@ function TwoFactorForm({
                 : "border-white/15 focus:border-nexus-lavender/50 focus:ring-nexus-lavender/20",
             )}
           />
-          <FieldError error={fieldError} />
+          {fieldError && <p className="mt-1.5 text-xs text-nexus-coral">{fieldError}</p>}
         </div>
 
         <button
@@ -331,11 +371,10 @@ export default function LoginPage() {
     { status: "idle" },
   );
 
-  /* ── rate-limit countdown (persiste en sessionStorage) ─────────── */
+  /* ── rate-limit countdown ───────────────────────────────────────── */
   const [rlSeconds, setRlSeconds] = useState(0);
   const isRateLimited = rlSeconds > 0;
 
-  /* Restaurar al montar (p.ej. el usuario salió a la landing y volvió) */
   useEffect(() => {
     const stored = sessionStorage.getItem(RL_KEY);
     if (!stored) return;
@@ -344,7 +383,6 @@ export default function LoginPage() {
     else sessionStorage.removeItem(RL_KEY);
   }, []);
 
-  /* Sincronizar cuando el servidor devuelve 429 */
   useEffect(() => {
     const rl =
       loginState.status === "rate_limited" ? loginState
@@ -356,15 +394,11 @@ export default function LoginPage() {
     setRlSeconds(rl.retryAfterSeconds);
   }, [loginState, twoFAState]);
 
-  /* Ticker de cuenta regresiva */
   useEffect(() => {
     if (!isRateLimited) return;
     const id = setInterval(() => {
       setRlSeconds((prev) => {
-        if (prev <= 1) {
-          sessionStorage.removeItem(RL_KEY);
-          return 0;
-        }
+        if (prev <= 1) { sessionStorage.removeItem(RL_KEY); return 0; }
         return prev - 1;
       });
     }, 1000);
@@ -375,17 +409,9 @@ export default function LoginPage() {
 
   return (
     <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-nexus-deep px-4 py-12">
-      {/* Ambient glow */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -left-48 -top-48 size-[500px] rounded-full bg-nexus-purple/15 blur-[100px]"
-      />
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -bottom-40 -right-40 size-96 rounded-full bg-nexus-lavender/10 blur-3xl"
-      />
+      <div aria-hidden className="pointer-events-none absolute -left-48 -top-48 size-[500px] rounded-full bg-nexus-purple/15 blur-[100px]" />
+      <div aria-hidden className="pointer-events-none absolute -bottom-40 -right-40 size-96 rounded-full bg-nexus-lavender/10 blur-3xl" />
 
-      {/* Back to landing */}
       <Link
         href="/"
         className="mb-6 flex items-center gap-1.5 text-sm text-white/45 transition-colors hover:text-white/80 focus-visible:outline-none focus-visible:underline"
@@ -394,7 +420,6 @@ export default function LoginPage() {
         Volver al inicio
       </Link>
 
-      {/* Logo */}
       <Link href="/" className="group mb-8 flex items-center gap-2.5">
         <span className="relative grid size-9 place-items-center rounded-xl bg-gradient-to-br from-nexus-purple to-nexus-lavender shadow-lg shadow-nexus-lavender/30 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6">
           <Sparkles className="size-4 text-white" />
@@ -404,7 +429,6 @@ export default function LoginPage() {
         </span>
       </Link>
 
-      {/* Card */}
       <div className="w-full max-w-md overflow-hidden rounded-2xl border border-white/10 bg-white/[0.05] p-8 shadow-2xl shadow-black/50 backdrop-blur-xl sm:p-10">
         <AnimatePresence mode="wait" initial={false}>
           {showTwoFA ? (

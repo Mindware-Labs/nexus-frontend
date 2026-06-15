@@ -11,7 +11,14 @@ export type ActionState =
   | { status: 'error'; message: string }
   | { status: 'rate_limited'; retryAfterSeconds: number }
   | { status: 'two_factor'; preAuthToken: string }
-  | { status: 'success' };
+  | { status: 'success' }
+  | { status: 'blocked'; message: string };
+
+// Mensajes del backend que indican bloqueo permanente (cuenta/tenant inactivo).
+// "bloqueada temporalmente" NO está aquí — es un bloqueo por intentos fallidos de contraseña.
+function isPermBlocked(message: string): boolean {
+  return message.includes('desactivada') || message.includes('suspendida');
+}
 
 type BackendError = { message: string | string[]; statusCode?: number };
 
@@ -56,7 +63,11 @@ export async function loginAction(
   if (res.status === 429) return rateLimited(res);
 
   if (!res.ok) {
-    return { status: 'error', message: extractMessage(body, 'Error al iniciar sesión') };
+    const message = extractMessage(body, 'Error al iniciar sesión');
+    if (res.status === 403 && isPermBlocked(message)) {
+      return { status: 'blocked', message };
+    }
+    return { status: 'error', message };
   }
 
   if ('twoFactorRequired' in body) {
@@ -127,12 +138,17 @@ export async function forgotPasswordAction(
 
   if (res.status === 429) return rateLimited(res);
 
-  // Backend returns {} when email not found, { message: '...' } when found and email sent.
-  // Show a vague error either way to avoid confirming whether an account exists.
   const body = await res.json().catch(() => ({}));
-  if (!res.ok || !body.message) {
+
+  if (!res.ok) {
+    const message = extractMessage(body, 'Credenciales inválidas');
+    if (res.status === 403 && isPermBlocked(message)) {
+      return { status: 'blocked', message };
+    }
     return { status: 'error', message: 'Credenciales inválidas' };
   }
+
+  if (!body.message) return { status: 'error', message: 'Credenciales inválidas' };
 
   return { status: 'success' };
 }
