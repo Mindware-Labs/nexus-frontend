@@ -1,5 +1,6 @@
 'use server'
 import { revalidatePath } from 'next/cache'
+import { redirect } from 'next/navigation'
 import { CreateTenantSchema, UpdateTenantSchema } from '@/lib/schemas/tenants'
 import { backendFetch } from '@/lib/api'
 
@@ -141,31 +142,53 @@ export async function updateTenantAction(
 }
 
 export async function listTenants(): Promise<Tenant[]> {
+  let res: Response
   try {
-    const res = await backendFetch('/tenants')
-    if (!res.ok) return []
-    const data: unknown = await res.json()
-    if (!Array.isArray(data)) return []
-    return data.flatMap((row) => {
-      const tenant = toTenant(row)
-      return tenant ? [tenant] : []
-    })
+    res = await backendFetch('/tenants')
   } catch {
-    return []
+    throw new Error('No se pudo conectar con el servidor para cargar los tenants')
   }
+
+  if (res.status === 401) redirect('/login')
+
+  if (!res.ok) {
+    const body: BackendError = await res.json().catch(() => ({}))
+    throw new Error(extractMessage(body, 'No se pudieron cargar los tenants'))
+  }
+
+  const data: unknown = await res.json().catch(() => null)
+  if (!Array.isArray(data)) {
+    throw new Error('El servidor devolvio un formato invalido al cargar los tenants')
+  }
+
+  return data.flatMap((row) => {
+    const tenant = toTenant(row)
+    return tenant ? [tenant] : []
+  })
 }
 
 export async function listActiveTenants(): Promise<TenantOption[]> {
+  let res: Response
   try {
-    const res = await backendFetch('/tenants/active')
-    if (!res.ok) return []
-    const data: unknown = await res.json()
-    if (!Array.isArray(data)) return []
-    return data.flatMap((row) => {
-      const tenant = toTenantOption(row)
-      return tenant ? [tenant] : []
-    })
+    res = await backendFetch('/tenants/active')
   } catch {
-    return []
+    throw new Error('No se pudo conectar con el servidor para cargar los tenants activos')
   }
+
+  if (res.status === 401) redirect('/login')
+
+  if (!res.ok) {
+    const body: BackendError = await res.json().catch(() => ({}))
+    throw new Error(extractMessage(body, 'No se pudieron cargar los tenants activos'))
+  }
+
+  const data: unknown = await res.json().catch(() => null)
+  if (!Array.isArray(data)) {
+    throw new Error('El servidor devolvio un formato invalido al cargar los tenants activos')
+  }
+
+  return data.flatMap((row) => {
+    const tenant = toTenantOption(row)
+    return tenant ? [tenant] : []
+  })
 }

@@ -28,7 +28,13 @@ import {
 
 type FieldErrors = { name?: string; email?: string; tenantId?: string }
 
-export function AddCustomerDialog({ tenants }: { tenants: TenantOption[] }) {
+export function AddCustomerDialog({
+  tenants,
+  tenantsLoadError,
+}: {
+  tenants: TenantOption[]
+  tenantsLoadError?: string | null
+}) {
   const [open, setOpen] = useState(false)
   const [state, formAction, isPending] = useActionState<CustomerActionState, FormData>(
     createCustomerAction,
@@ -81,6 +87,7 @@ export function AddCustomerDialog({ tenants }: { tenants: TenantOption[] }) {
 
   const isSuccess = state.status === "success"
   const noTenants = tenants.length === 0
+  const hasTenantLoadError = !!tenantsLoadError
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -116,6 +123,19 @@ export function AddCustomerDialog({ tenants }: { tenants: TenantOption[] }) {
                 </span>
               </p>
             </div>
+          </div>
+        ) : hasTenantLoadError ? (
+          <div className="flex flex-col items-center gap-3 py-4 text-center">
+            <div className="flex size-10 items-center justify-center rounded-full bg-destructive/10">
+              <AlertCircle className="size-5 text-destructive" />
+            </div>
+            <div>
+              <p className="font-medium text-foreground">No se pudo cargar la lista de tenants</p>
+              <p className="mt-1 text-sm text-muted-foreground">{tenantsLoadError}</p>
+            </div>
+            <DialogClose asChild>
+              <Button variant="outline" size="sm">Entendido</Button>
+            </DialogClose>
           </div>
         ) : noTenants ? (
           <div className="flex flex-col items-center gap-3 py-4 text-center">

@@ -1,7 +1,9 @@
 'use server'
 import { randomBytes } from 'crypto'
 import { revalidatePath } from 'next/cache'
+import { redirect } from 'next/navigation'
 import { CreateCustomerSchema, UpdateCustomerSchema } from '@/lib/schemas/customers'
+import type { TenantPlan } from '@/lib/schemas/tenants'
 import { backendFetch } from '@/lib/api'
 
 export type CustomerActionState =
@@ -16,6 +18,13 @@ export interface Customer {
   tenant_id: number | null
   is_active: boolean
   created_at: string
+}
+
+export interface CustomerListFilters {
+  name?: string
+  tenantId?: number
+  plan?: TenantPlan
+  isActive?: boolean
 }
 
 type BackendError = { message: string | string[] }
@@ -134,17 +143,35 @@ export async function updateCustomerAction(
   return { status: 'success', customerName: parsed.data.name }
 }
 
-export async function listCustomers(): Promise<Customer[]> {
+export async function listCustomers(filters: CustomerListFilters = {}): Promise<Customer[]> {
+  const params = new URLSearchParams()
+  if (filters.name) params.set('name', filters.name)
+  if (filters.tenantId !== undefined) params.set('tenantId', String(filters.tenantId))
+  if (filters.plan) params.set('plan', filters.plan)
+  if (filters.isActive !== undefined) params.set('isActive', String(filters.isActive))
+
+  const path = params.size > 0 ? `/auth/customers?${params.toString()}` : '/auth/customers'
+  let res: Response
   try {
-    const res = await backendFetch('/auth/customers')
-    if (!res.ok) return []
-    const data: unknown = await res.json()
-    if (!Array.isArray(data)) return []
-    return data.flatMap((row) => {
-      const customer = toCustomer(row)
-      return customer ? [customer] : []
-    })
+    res = await backendFetch(path)
   } catch {
-    return []
+    throw new Error('No se pudo conectar con el servidor para cargar los clientes')
   }
+
+  if (res.status === 401) redirect('/login')
+
+  if (!res.ok) {
+    const body: BackendError = await res.json().catch(() => ({}))
+    throw new Error(extractMessage(body, 'No se pudieron cargar los clientes'))
+  }
+
+  const data: unknown = await res.json().catch(() => null)
+  if (!Array.isArray(data)) {
+    throw new Error('El servidor devolvio un formato invalido al cargar los clientes')
+  }
+
+  return data.flatMap((row) => {
+    const customer = toCustomer(row)
+    return customer ? [customer] : []
+  })
 }
