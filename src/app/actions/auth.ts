@@ -1,6 +1,6 @@
 'use server';
 import { redirect } from 'next/navigation';
-import { LoginSchema, TwoFASchema } from '@/lib/schemas/auth';
+import { LoginSchema, TwoFASchema, ForgotPasswordSchema, VerifyResetCodeSchema, ResetPasswordSchema } from '@/lib/schemas/auth';
 import { createSession, deleteSession, getRefreshToken } from '@/lib/session';
 import type { LoginApiResponse, TokenPair } from '@/types/auth';
 
@@ -10,7 +10,8 @@ export type ActionState =
   | { status: 'idle' }
   | { status: 'error'; message: string }
   | { status: 'rate_limited'; retryAfterSeconds: number }
-  | { status: 'two_factor'; preAuthToken: string };
+  | { status: 'two_factor'; preAuthToken: string }
+  | { status: 'success' };
 
 type BackendError = { message: string | string[]; statusCode?: number };
 
@@ -101,6 +102,115 @@ export async function verify2FAAction(
 
   await createSession(body);
   redirect(body.role === 'owner' ? '/dashboard' : '/panel');
+}
+
+export async function forgotPasswordAction(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const parsed = ForgotPasswordSchema.safeParse({ email: formData.get('email') });
+  if (!parsed.success) {
+    return { status: 'error', message: parsed.error.issues[0]?.message ?? 'Datos inválidos' };
+  }
+
+  let res: Response;
+  try {
+    res = await fetch(`${BACKEND}/auth/forgot-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(parsed.data),
+      cache: 'no-store',
+    });
+  } catch {
+    return { status: 'error', message: 'No se pudo conectar con el servidor' };
+  }
+
+  if (res.status === 429) return rateLimited(res);
+
+  // Backend returns {} when email not found, { message: '...' } when found and email sent.
+  // Show a vague error either way to avoid confirming whether an account exists.
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok || !body.message) {
+    return { status: 'error', message: 'Credenciales inválidas' };
+  }
+
+  return { status: 'success' };
+}
+
+export async function verifyResetCodeAction(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const parsed = VerifyResetCodeSchema.safeParse({
+    email: formData.get('email'),
+    code: formData.get('code'),
+  });
+  if (!parsed.success) {
+    return { status: 'error', message: parsed.error.issues[0]?.message ?? 'Código inválido' };
+  }
+
+  let res: Response;
+  try {
+    res = await fetch(`${BACKEND}/auth/verify-reset-code`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(parsed.data),
+      cache: 'no-store',
+    });
+  } catch {
+    return { status: 'error', message: 'No se pudo conectar con el servidor' };
+  }
+
+  if (res.status === 429) return rateLimited(res);
+
+  if (!res.ok) {
+    const body: BackendError = await res.json().catch(() => ({}));
+    return { status: 'error', message: extractMessage(body, 'Código de recuperación inválido') };
+  }
+
+  const { resetToken } = await res.json().catch(() => ({ resetToken: undefined }));
+  if (typeof resetToken !== 'string' || resetToken.length === 0) {
+    return { status: 'error', message: 'No se pudo generar el enlace de recuperacion' };
+  }
+
+  redirect(`/reset-password?token=${encodeURIComponent(resetToken)}`);
+}
+
+export async function resetPasswordAction(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const parsed = ResetPasswordSchema.safeParse({
+    resetToken: formData.get('resetToken'),
+    password: formData.get('password'),
+    confirm: formData.get('confirm'),
+  });
+  if (!parsed.success) {
+    return { status: 'error', message: parsed.error.issues[0]?.message ?? 'Datos inválidos' };
+  }
+
+  let res: Response;
+  try {
+    res = await fetch(`${BACKEND}/auth/reset-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token: parsed.data.resetToken, password: parsed.data.password }),
+      cache: 'no-store',
+    });
+  } catch {
+    return { status: 'error', message: 'No se pudo conectar con el servidor' };
+  }
+
+  if (!res.ok) {
+    const body: BackendError = await res.json().catch(() => ({}));
+    const message =
+      res.status === 401
+        ? 'El enlace de recuperación es inválido o ha expirado'
+        : extractMessage(body, 'No se pudo restablecer la contraseña');
+    return { status: 'error', message };
+  }
+
+  return { status: 'success' };
 }
 
 export async function logoutAction(): Promise<void> {

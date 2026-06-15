@@ -12,7 +12,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import Link from "next/link";
-import { useActionState, useEffect, useState } from "react";
+import { startTransition, useActionState, useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { loginAction, verify2FAAction, type ActionState } from "@/app/actions/auth";
 import { LoginSchema, TwoFASchema } from "@/lib/schemas/auth";
@@ -133,14 +133,14 @@ function CredentialsForm({
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-    if (isRateLimited) { e.preventDefault(); return; }
+    e.preventDefault();
+    if (isRateLimited) return;
     const fd = new FormData(e.currentTarget);
     const result = LoginSchema.safeParse({
       email: fd.get("email"),
       password: fd.get("password"),
     });
     if (!result.success) {
-      e.preventDefault();
       const fe: FieldErrors = {};
       for (const issue of result.error.issues) {
         const key = issue.path[0] as keyof FieldErrors;
@@ -149,6 +149,7 @@ function CredentialsForm({
       setFieldErrors(fe);
     } else {
       setFieldErrors({});
+      startTransition(() => formAction(fd));
     }
   }
 
@@ -165,7 +166,7 @@ function CredentialsForm({
         <p className="mt-1.5 text-sm text-white/50">Inicia sesión en tu cuenta de Nexus</p>
       </div>
 
-      <form action={formAction} onSubmit={handleSubmit} className="space-y-5">
+      <form onSubmit={handleSubmit} className="space-y-5">
         {isRateLimited
           ? <RateLimitBanner seconds={rlSeconds} />
           : state.status === "error" && <ErrorBanner message={state.message} />}
@@ -232,17 +233,18 @@ function TwoFactorForm({
   const [fieldError, setFieldError] = useState<string | undefined>();
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-    if (isRateLimited) { e.preventDefault(); return; }
+    e.preventDefault();
+    if (isRateLimited) return;
     const fd = new FormData(e.currentTarget);
     const result = TwoFASchema.safeParse({
       preAuthToken: fd.get("preAuthToken"),
       code: fd.get("code"),
     });
     if (!result.success) {
-      e.preventDefault();
       setFieldError(result.error.issues[0]?.message);
     } else {
       setFieldError(undefined);
+      startTransition(() => formAction(fd));
     }
   }
 
@@ -264,7 +266,7 @@ function TwoFactorForm({
         </p>
       </div>
 
-      <form action={formAction} onSubmit={handleSubmit} className="space-y-5">
+      <form onSubmit={handleSubmit} className="space-y-5">
         {isRateLimited
           ? <RateLimitBanner seconds={rlSeconds} />
           : state.status === "error" && <ErrorBanner message={state.message} />}
