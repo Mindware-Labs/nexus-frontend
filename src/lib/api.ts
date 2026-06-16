@@ -67,6 +67,29 @@ function buildHeaders(token: string, extra?: RequestInit['headers']): Record<str
   }
 }
 
+// Variante para uploads multipart — no fija Content-Type (el boundary lo pone el runtime).
+export async function backendFetchFormData(path: string, body: FormData): Promise<Response> {
+  const accessToken = await getAccessToken()
+  if (!accessToken) {
+    return new Response(JSON.stringify({ message: 'No autenticado' }), { status: 401 })
+  }
+
+  const doFetch = (token: string) =>
+    fetch(`${BACKEND}${path}`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body,
+      cache: 'no-store',
+    })
+
+  const res = await doFetch(accessToken)
+  if (res.status !== 401) return res
+
+  const newToken = await refreshAccessToken()
+  if (!newToken) return res
+  return doFetch(newToken)
+}
+
 export async function backendFetch(path: string, init?: RequestInit): Promise<Response> {
   const accessToken = await getAccessToken()
   if (!accessToken) {

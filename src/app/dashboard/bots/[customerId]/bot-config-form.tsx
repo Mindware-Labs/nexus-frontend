@@ -17,7 +17,7 @@ import {
 
 import type { ProductItem, RuleItem, PricingItem, QuestionItem, ContactField, ScoringCriterion } from './_shared'
 import { SUPPORTED_LANGUAGES, TEMPERATURE_OPTIONS } from './_shared'
-import { Section, Field, TagInput, ColorPickerField } from './_ui'
+import { Section, Field, TagInput, ColorPickerField, AvatarPickerField } from './_ui'
 import { ProductsList, RulesList, PricingList, QuestionsList } from './_lists'
 import { PreviewDialog, WidgetPreviewDialog } from './_dialogs'
 
@@ -97,14 +97,6 @@ export function BotConfigForm({ config, customerId }: { config: BotConfig; custo
       await toggleBotActiveAction(customerId, !isBotActive)
       setIsBotActive((v) => !v)
     })
-  }
-
-  function handleImageFile(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (!file) return
-    const reader = new FileReader()
-    reader.onload = () => setAvatarValue(reader.result as string)
-    reader.readAsDataURL(file)
   }
 
   function copySnippet() {
@@ -191,33 +183,13 @@ export function BotConfigForm({ config, customerId }: { config: BotConfig; custo
         </Field>
 
         <Field label="BOT-02 · Avatar">
-          <div className="flex gap-3">
-            <Select value={avatarMode} onValueChange={(v) => setAvatarMode(v as typeof avatarMode)}>
-              <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="icon">Ícono</SelectItem>
-                <SelectItem value="emoji">Emoji</SelectItem>
-                <SelectItem value="image">Imagen</SelectItem>
-              </SelectContent>
-            </Select>
-            {avatarMode === 'image' ? (
-              <div className="flex flex-1 items-center gap-3">
-                <input type="file" accept="image/*" onChange={handleImageFile} className="text-sm" />
-                {avatarValue?.startsWith('data:') && (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={avatarValue} alt="avatar" className="size-9 rounded-full object-cover border" />
-                )}
-              </div>
-            ) : (
-              <Input
-                className="flex-1"
-                value={avatarValue}
-                onChange={(e) => setAvatarValue(e.target.value)}
-                placeholder={avatarMode === 'emoji' ? '🤖' : 'bot-circle'}
-                maxLength={avatarMode === 'emoji' ? 8 : 80}
-              />
-            )}
-          </div>
+          <AvatarPickerField
+            mode={avatarMode}
+            value={avatarValue}
+            primaryColor={widgetPrimaryColor}
+            customerId={customerId}
+            onChange={(m, v) => { setAvatarMode(m); setAvatarValue(v) }}
+          />
         </Field>
 
         <Field label="BOT-24 · Mensaje de bienvenida" hint="Se muestra al abrir el widget por primera vez.">

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef } from 'react'
-import { Plus, X } from 'lucide-react'
+import { ImagePlus, Loader2, Plus, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -185,6 +185,147 @@ export function ColorPickerField({
             </button>
           )
         })}
+      </div>
+    </div>
+  )
+}
+
+// ── AvatarPickerField ─────────────────────────────────────────────────────────
+
+const AVATAR_EMOJIS = ['🤖', '🦾', '💬', '🧠', '⚡', '🌟', '🎯', '🚀', '🦊', '🐬', '🦋', '💎', '🎩', '🌈', '🔮', '✨']
+
+interface AvatarPickerProps {
+  mode: 'icon' | 'emoji' | 'image'
+  value: string
+  primaryColor: string
+  customerId: number
+  onChange: (mode: 'icon' | 'emoji' | 'image', value: string) => void
+}
+
+export function AvatarPickerField({ mode, value, primaryColor, customerId, onChange }: AvatarPickerProps) {
+  const fileRef = useRef<HTMLInputElement>(null)
+  const [uploading, setUploading] = useState(false)
+  const [uploadError, setUploadError] = useState('')
+
+  // Current preview
+  const previewUrl = mode === 'image' ? value : null
+  const previewEmoji = mode === 'emoji' ? value : null
+
+  async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    e.target.value = ''
+
+    if (file.size > 2 * 1024 * 1024) {
+      setUploadError('El archivo no puede superar 2 MB.')
+      return
+    }
+    if (!['image/jpeg', 'image/png', 'image/webp', 'image/gif'].includes(file.type)) {
+      setUploadError('Solo se permiten JPG, PNG, WebP o GIF.')
+      return
+    }
+
+    setUploadError('')
+    setUploading(true)
+
+    try {
+      const form = new FormData()
+      form.append('file', file)
+      const res = await fetch(`/api/bot/${customerId}/avatar`, { method: 'POST', body: form })
+      const data = await res.json() as { avatarUrl?: string; message?: string }
+      if (!res.ok) throw new Error(data.message ?? 'Error al subir')
+      onChange('image', data.avatarUrl!)
+    } catch (err) {
+      setUploadError(err instanceof Error ? err.message : 'Error al subir la imagen.')
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Current avatar preview */}
+      <div className="flex items-center gap-3">
+        <div
+          className="size-14 rounded-2xl flex items-center justify-center shrink-0 overflow-hidden border shadow-sm"
+          style={{ background: primaryColor }}
+        >
+          {previewUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={previewUrl} alt="avatar" className="size-full object-cover" />
+          ) : previewEmoji ? (
+            <span className="text-2xl">{previewEmoji}</span>
+          ) : (
+            <svg viewBox="0 0 24 24" className="size-7" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="11" width="18" height="10" rx="2" />
+              <circle cx="12" cy="7" r="3" />
+              <line x1="8" y1="15" x2="8" y2="15" strokeWidth="2.5" />
+              <line x1="12" y1="15" x2="12" y2="15" strokeWidth="2.5" />
+              <line x1="16" y1="15" x2="16" y2="15" strokeWidth="2.5" />
+            </svg>
+          )}
+        </div>
+        <div className="space-y-0.5">
+          <p className="text-sm font-medium text-foreground">
+            {mode === 'image' ? 'Imagen personalizada' : mode === 'emoji' ? `Emoji: ${value}` : 'Ícono predeterminado'}
+          </p>
+          <p className="text-xs text-muted-foreground">
+            {mode === 'image' ? 'Subida al bucket de archivos' : 'Elige un emoji o sube tu imagen'}
+          </p>
+        </div>
+        {mode === 'image' && (
+          <Button
+            type="button" variant="ghost" size="sm"
+            onClick={() => onChange('icon', 'bot')}
+            className="ml-auto text-xs text-muted-foreground hover:text-destructive"
+          >
+            <X className="size-3.5 mr-1" />Quitar
+          </Button>
+        )}
+      </div>
+
+      {/* Emoji grid */}
+      <div className="space-y-1.5">
+        <p className="text-xs font-medium text-muted-foreground">Emojis</p>
+        <div className="flex flex-wrap gap-1.5">
+          {AVATAR_EMOJIS.map((emoji) => {
+            const active = mode === 'emoji' && value === emoji
+            return (
+              <button
+                key={emoji}
+                type="button"
+                onClick={() => onChange('emoji', emoji)}
+                className={[
+                  'size-9 rounded-xl text-lg transition-all hover:scale-110 active:scale-95 border',
+                  active
+                    ? 'border-nexus-purple/50 bg-nexus-purple/10 ring-2 ring-nexus-purple/30 scale-110'
+                    : 'border-input bg-background hover:border-muted-foreground/30',
+                ].join(' ')}
+                title={emoji}
+              >
+                {emoji}
+              </button>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* Image upload */}
+      <div className="space-y-1.5">
+        <p className="text-xs font-medium text-muted-foreground">Imagen propia</p>
+        <button
+          type="button"
+          onClick={() => fileRef.current?.click()}
+          disabled={uploading}
+          className="flex items-center gap-2.5 rounded-xl border border-dashed border-input px-4 py-3 text-sm text-muted-foreground transition-colors hover:border-nexus-purple/50 hover:text-foreground hover:bg-muted/30 disabled:opacity-50 w-full"
+        >
+          {uploading
+            ? <Loader2 className="size-4 animate-spin shrink-0" />
+            : <ImagePlus className="size-4 shrink-0" />}
+          <span>{uploading ? 'Subiendo…' : 'Subir imagen (JPG, PNG, WebP · máx 2 MB)'}</span>
+        </button>
+        <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={handleFile} className="sr-only" />
+        {uploadError && <p className="text-xs text-destructive">{uploadError}</p>}
       </div>
     </div>
   )
