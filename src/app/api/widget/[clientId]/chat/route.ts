@@ -12,7 +12,7 @@ export async function POST(
 
   const { clientId } = await params
   const body = (await request.json().catch(() => null)) as
-    | { message?: unknown; history?: unknown }
+    | { message?: unknown; history?: unknown; sessionId?: unknown }
     | null
 
   if (!body || typeof body.message !== 'string' || body.message.trim().length === 0) {
@@ -25,6 +25,7 @@ export async function POST(
     body: JSON.stringify({
       message: body.message.trim(),
       history: Array.isArray(body.history) ? body.history : [],
+      ...(typeof body.sessionId === 'string' ? { sessionId: body.sessionId } : {}),
     }),
     cache: 'no-store',
   })

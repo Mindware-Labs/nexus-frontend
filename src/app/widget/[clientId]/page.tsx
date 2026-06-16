@@ -67,6 +67,22 @@ export default function WidgetPage({ params }: { params: Promise<{ clientId: str
   const [chatDisabled, setChatDisabled] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  const sessionIdRef = useRef<string | null>(null)
+
+  // sessionId estable por sesión del widget (continuidad de conversación).
+  useEffect(() => {
+    if (!clientId || typeof window === 'undefined') return
+    const key = `nx_session_${clientId}`
+    let sid = sessionStorage.getItem(key)
+    if (!sid) {
+      sid =
+        typeof crypto !== 'undefined' && crypto.randomUUID
+          ? crypto.randomUUID()
+          : `${Date.now()}-${Math.random().toString(36).slice(2)}`
+      sessionStorage.setItem(key, sid)
+    }
+    sessionIdRef.current = sid
+  }, [clientId])
 
   useEffect(() => {
     if (!clientId) return
@@ -104,6 +120,7 @@ export default function WidgetPage({ params }: { params: Promise<{ clientId: str
         body: JSON.stringify({
           message: text,
           history: next.slice(0, -1).map((m) => ({ role: m.role, text: m.text })),
+          sessionId: sessionIdRef.current ?? undefined,
         }),
       })
 
