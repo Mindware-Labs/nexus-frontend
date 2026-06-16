@@ -3,6 +3,7 @@ import type { NextRequest } from 'next/server';
 
 const TOKEN_COOKIE = 'nx_token';
 const USER_COOKIE = 'nx_user';
+const BACKEND = process.env.BACKEND_URL;
 
 type PartialUser = { role: string };
 
@@ -15,8 +16,44 @@ function parseUserCookie(value: string | undefined): PartialUser | null {
   }
 }
 
-export function proxy(request: NextRequest) {
+async function handleWidgetRoute(request: NextRequest, clientId: string) {
+  if (!BACKEND) {
+    const res = NextResponse.next();
+    res.headers.set('Content-Security-Policy', "frame-ancestors 'none'");
+    return res;
+  }
+
+  try {
+    const backendRes = await fetch(
+      `${BACKEND}/api/v1/bot/widget/${clientId}/config`,
+      { cache: 'no-store' },
+    );
+
+    const response = NextResponse.next();
+
+    if (backendRes.ok) {
+      const config = await backendRes.json();
+      const websiteUrl = (config.websiteUrl as string | undefined)?.trim();
+      const frameAncestors = websiteUrl ? `'self' ${websiteUrl}` : "'none'";
+      response.headers.set('Content-Security-Policy', `frame-ancestors ${frameAncestors}`);
+    } else {
+      response.headers.set('Content-Security-Policy', "frame-ancestors 'none'");
+    }
+
+    return response;
+  } catch {
+    // Error de red: dejar pasar sin bloquear para no romper el widget.
+    return NextResponse.next();
+  }
+}
+
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  const widgetMatch = pathname.match(/^\/widget\/([^/]+)$/);
+  if (widgetMatch) {
+    return handleWidgetRoute(request, widgetMatch[1]);
+  }
 
   const isAuthenticated = !!request.cookies.get(TOKEN_COOKIE)?.value;
   const user = parseUserCookie(request.cookies.get(USER_COOKIE)?.value);
@@ -51,5 +88,5 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/dashboard/:path*', '/panel/:path*', '/login'],
+  matcher: ['/dashboard/:path*', '/panel/:path*', '/login', '/widget/:clientId*'],
 };
