@@ -3,7 +3,7 @@ import type { NextRequest } from 'next/server';
 
 const TOKEN_COOKIE = 'nx_token';
 const USER_COOKIE = 'nx_user';
-const BACKEND = process.env.BACKEND_URL;
+const BACKEND = process.env.BACKEND_URL ?? process.env.NEXT_PUBLIC_BACKEND_URL;
 
 type PartialUser = { role: string };
 
@@ -25,7 +25,7 @@ async function handleWidgetRoute(request: NextRequest, clientId: string) {
 
   try {
     const backendRes = await fetch(
-      `${BACKEND}/api/v1/bot/widget/${clientId}/config`,
+      `${BACKEND}/bot/widget/${clientId}/config`,
       { cache: 'no-store' },
     );
 
