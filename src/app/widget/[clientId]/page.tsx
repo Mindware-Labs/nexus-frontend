@@ -64,6 +64,7 @@ export default function WidgetPage({ params }: { params: Promise<{ clientId: str
   const [messages, setMessages] = useState<Message[]>([])
   const [draft, setDraft] = useState('')
   const [sending, setSending] = useState(false)
+  const [chatDisabled, setChatDisabled] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -89,7 +90,7 @@ export default function WidgetPage({ params }: { params: Promise<{ clientId: str
 
   async function send() {
     const text = draft.trim()
-    if (!text || sending || !config) return
+    if (!text || sending || !config || chatDisabled) return
 
     const next: Message[] = [...messages, { role: 'user', text }]
     setMessages(next)
@@ -105,6 +106,18 @@ export default function WidgetPage({ params }: { params: Promise<{ clientId: str
           history: next.slice(0, -1).map((m) => ({ role: m.role, text: m.text })),
         }),
       })
+
+      if (!res.ok) {
+        if (res.status === 403) {
+          setMessages([...next, { role: 'bot', text: 'Este asistente ya no está disponible.' }])
+          setChatDisabled(true)
+        } else {
+          setMessages([...next, { role: 'bot', text: 'Ocurrió un error. Inténtalo de nuevo.' }])
+        }
+        setSending(false)
+        return
+      }
+
       const data = await res.json()
       setMessages([...next, { role: 'bot', text: data.reply ?? 'Sin respuesta.' }])
     } catch {
@@ -194,31 +207,37 @@ export default function WidgetPage({ params }: { params: Promise<{ clientId: str
       </div>
 
       {/* Input */}
-      <div style={{ display: 'flex', gap: 8, padding: '10px 12px', borderTop: '1px solid #e8e8e8', flexShrink: 0, background: '#fff' }}>
-        <input
-          ref={inputRef}
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send() } }}
-          placeholder="Escribe un mensaje…"
-          disabled={sending}
-          style={{
-            flex: 1, border: '1px solid #ddd', borderRadius: 22, padding: '9px 14px', fontSize: 14,
-            outline: 'none', background: '#fafafa', color: '#1a1a1a',
-          }}
-        />
-        <button
-          onClick={send}
-          disabled={sending || !draft.trim()}
-          style={{
-            width: 40, height: 40, borderRadius: '50%', border: 'none', background: draft.trim() && !sending ? color : '#e0e0e0',
-            color: '#fff', cursor: draft.trim() && !sending ? 'pointer' : 'default',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'background 0.2s',
-          }}
-        >
-          <Send size={16} />
-        </button>
-      </div>
+      {chatDisabled ? (
+        <div style={{ padding: '12px 16px', borderTop: '1px solid #e8e8e8', background: '#fafafa', textAlign: 'center', fontSize: 13, color: '#999', flexShrink: 0 }}>
+          Asistente no disponible
+        </div>
+      ) : (
+        <div style={{ display: 'flex', gap: 8, padding: '10px 12px', borderTop: '1px solid #e8e8e8', flexShrink: 0, background: '#fff' }}>
+          <input
+            ref={inputRef}
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send() } }}
+            placeholder="Escribe un mensaje…"
+            disabled={sending}
+            style={{
+              flex: 1, border: '1px solid #ddd', borderRadius: 22, padding: '9px 14px', fontSize: 14,
+              outline: 'none', background: '#fafafa', color: '#1a1a1a',
+            }}
+          />
+          <button
+            onClick={send}
+            disabled={sending || !draft.trim()}
+            style={{
+              width: 40, height: 40, borderRadius: '50%', border: 'none', background: draft.trim() && !sending ? color : '#e0e0e0',
+              color: '#fff', cursor: draft.trim() && !sending ? 'pointer' : 'default',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'background 0.2s',
+            }}
+          >
+            <Send size={16} />
+          </button>
+        </div>
+      )}
 
       <style>{`
         @keyframes bounce {

@@ -143,6 +143,41 @@ export async function updateCustomerAction(
   return { status: 'success', customerName: parsed.data.name }
 }
 
+export interface CustomerStats {
+  customerName: string
+  customerEmail: string
+  lastActivity: string | null
+  conversationsThisMonth: number
+  tokensThisMonth: number
+  leadsThisMonth: number
+  recentLeads: Array<{
+    name: string | null
+    email: string | null
+    phone: string | null
+    company: string | null
+    summary: string
+    created_at: string
+  }>
+}
+
+export async function getCustomerStats(id: number): Promise<CustomerStats> {
+  let res: Response
+  try {
+    res = await backendFetch(`/bot/customers/${id}/stats`)
+  } catch {
+    throw new Error('No se pudo conectar con el servidor')
+  }
+
+  if (res.status === 401) redirect('/login')
+
+  if (!res.ok) {
+    const body: BackendError = await res.json().catch(() => ({}))
+    throw new Error(extractMessage(body, 'No se pudo cargar el detalle del cliente'))
+  }
+
+  return res.json() as Promise<CustomerStats>
+}
+
 export async function listCustomers(filters: CustomerListFilters = {}): Promise<Customer[]> {
   const params = new URLSearchParams()
   if (filters.name) params.set('name', filters.name)

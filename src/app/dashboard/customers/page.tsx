@@ -1,7 +1,7 @@
 import Link from "next/link"
 import type { ComponentProps } from "react"
 import { redirect } from "next/navigation"
-import { AlertCircle, Bot, Search, Users } from "lucide-react"
+import { AlertCircle, Bot, BarChart2, Search, Users } from "lucide-react"
 import { getSessionUser } from "@/lib/session"
 import { listCustomers, type CustomerListFilters } from "@/app/actions/customers"
 import { listActiveTenants, listTenants } from "@/app/actions/tenants"
@@ -328,6 +328,11 @@ export default async function CustomersPage({ searchParams }: CustomersPageProps
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-1">
+                        <Button asChild variant="ghost" size="icon" title="Ver detalle">
+                          <Link href={`/dashboard/customers/${c.id}`}>
+                            <BarChart2 className="size-4" />
+                          </Link>
+                        </Button>
                         <Button asChild variant="ghost" size="icon" title="Configurar bot">
                           <Link href={`/dashboard/bots/${c.id}`}>
                             <Bot className="size-4" />
