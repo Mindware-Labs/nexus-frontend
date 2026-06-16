@@ -110,8 +110,18 @@ export function BotConfigForm({ config, customerId }: { config: BotConfig; custo
     setScoringRubric(scoringRubric.map((r, j) => j === i ? { ...r, ...patch } : r))
   }
 
+  const STANDARD_KEYS = new Set(['name', 'company', 'email', 'phone'])
+
   function updateContactField(i: number, patch: Partial<ContactField>) {
     setContactFields(contactFields.map((f, j) => j === i ? { ...f, ...patch } : f))
+  }
+
+  function addCustomContactField() {
+    setContactFields([...contactFields, { key: '', label: '', enabled: true, required: false }])
+  }
+
+  function removeCustomContactField(i: number) {
+    setContactFields(contactFields.filter((_, j) => j !== i))
   }
 
   // Widget preview props — single object for both uses
@@ -315,35 +325,65 @@ export function BotConfigForm({ config, customerId }: { config: BotConfig; custo
             <table className="w-full text-sm">
               <thead className="bg-muted/50 text-xs text-muted-foreground">
                 <tr>
-                  <th className="px-3 py-2 text-left">Campo</th>
+                  <th className="px-3 py-2 text-left">Clave</th>
                   <th className="px-3 py-2 text-center">Habilitado</th>
                   <th className="px-3 py-2 text-center">Obligatorio</th>
                   <th className="px-3 py-2 text-left">Etiqueta</th>
+                  <th className="px-3 py-2 w-8" />
                 </tr>
               </thead>
               <tbody className="divide-y">
-                {contactFields.map((field, i) => (
-                  <tr key={field.key}>
-                    <td className="px-3 py-2 font-mono text-xs text-muted-foreground">{field.key}</td>
-                    <td className="px-3 py-2 text-center">
-                      <input type="checkbox" checked={field.enabled}
-                        onChange={(e) => updateContactField(i, { enabled: e.target.checked })}
-                        className="accent-nexus-purple" />
-                    </td>
-                    <td className="px-3 py-2 text-center">
-                      <input type="checkbox" checked={field.required} disabled={!field.enabled}
-                        onChange={(e) => updateContactField(i, { required: e.target.checked })}
-                        className="accent-nexus-purple disabled:opacity-30" />
-                    </td>
-                    <td className="px-3 py-2">
-                      <Input value={field.label} onChange={(e) => updateContactField(i, { label: e.target.value })}
-                        maxLength={40} className="h-7 text-xs" />
-                    </td>
-                  </tr>
-                ))}
+                {contactFields.map((field, i) => {
+                  const isStandard = STANDARD_KEYS.has(field.key)
+                  return (
+                    <tr key={i}>
+                      <td className="px-3 py-2">
+                        {isStandard ? (
+                          <span className="font-mono text-xs text-muted-foreground">{field.key}</span>
+                        ) : (
+                          <Input
+                            value={field.key}
+                            onChange={(e) => updateContactField(i, { key: e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '_') })}
+                            maxLength={50}
+                            placeholder="mi_campo"
+                            className="h-7 text-xs font-mono w-32"
+                          />
+                        )}
+                      </td>
+                      <td className="px-3 py-2 text-center">
+                        <input type="checkbox" checked={field.enabled}
+                          onChange={(e) => updateContactField(i, { enabled: e.target.checked })}
+                          className="accent-nexus-purple" />
+                      </td>
+                      <td className="px-3 py-2 text-center">
+                        <input type="checkbox" checked={field.required} disabled={!field.enabled}
+                          onChange={(e) => updateContactField(i, { required: e.target.checked })}
+                          className="accent-nexus-purple disabled:opacity-30" />
+                      </td>
+                      <td className="px-3 py-2">
+                        <Input value={field.label} onChange={(e) => updateContactField(i, { label: e.target.value })}
+                          maxLength={40} className="h-7 text-xs" />
+                      </td>
+                      <td className="px-3 py-2">
+                        {!isStandard && (
+                          <button
+                            type="button"
+                            onClick={() => removeCustomContactField(i)}
+                            className="text-muted-foreground hover:text-destructive transition-colors"
+                          >
+                            <Minus size={14} />
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
           </div>
+          <Button type="button" variant="outline" size="sm" className="mt-2 gap-1.5" onClick={addCustomContactField}>
+            <Plus size={14} /> Añadir campo personalizado
+          </Button>
         </Field>
 
         <Field label="BOT-17 · Emails de destino de notificaciones de captura de lead" hint="Escribe un email y presiona Enter.">
