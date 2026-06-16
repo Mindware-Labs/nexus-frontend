@@ -16,10 +16,15 @@ import {
   Phone,
   Building2,
   User,
+  Star,
+  ArrowUpDown,
+  Filter,
+  Lightbulb,
 } from 'lucide-react'
 import { getSessionUser } from '@/lib/session'
 import { getCustomerReports, type Period, type CustomerReports } from '@/app/actions/reports'
 import { PeriodSelector } from '@/components/reports/period-selector'
+import { LeadFilters } from '@/components/reports/lead-filters'
 import { CsvExportButton } from '@/components/reports/csv-export-button'
 import { ExcelExportButton } from '@/components/reports/excel-export-button'
 import { PdfExportButton } from '@/components/reports/pdf-export-button'
@@ -60,6 +65,20 @@ function fmtDateShort(iso: string) {
   return new Intl.DateTimeFormat('es-MX', { dateStyle: 'short' }).format(new Date(iso))
 }
 
+function ScoreBadge({ score, classification }: { score: number | null; classification: string | null }) {
+  if (score == null) return <span className="text-xs text-muted-foreground/50">—</span>
+  const color =
+    classification === 'Alta' ? 'text-green-700 bg-green-50 border-green-200 dark:text-green-400 dark:bg-green-950/30 dark:border-green-800'
+    : classification === 'Media' ? 'text-amber-700 bg-amber-50 border-amber-200 dark:text-amber-400 dark:bg-amber-950/30 dark:border-amber-800'
+    : 'text-red-700 bg-red-50 border-red-200 dark:text-red-400 dark:bg-red-950/30 dark:border-red-800'
+  return (
+    <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-semibold ${color}`}>
+      {classification === 'Alta' && <Star className="size-3 fill-current" />}
+      {classification} · {score}
+    </span>
+  )
+}
+
 function StatCard({
   icon,
   label,
@@ -86,16 +105,29 @@ function StatCard({
 function ReportsContent({
   reports,
   period,
+  sortLeads,
+  filterClass,
 }: {
   reports: CustomerReports
   period: Period
+  sortLeads: 'date' | 'score'
+  filterClass: string | null
 }) {
-  const leadsCsvRows = reports.leadsList.map((l) => ({
+  let displayLeads = [...reports.leadsList]
+  if (filterClass) displayLeads = displayLeads.filter((l) => l.classification === filterClass)
+  if (sortLeads === 'score') {
+    displayLeads.sort((a, b) => (b.score ?? -1) - (a.score ?? -1))
+  }
+
+  const leadsCsvRows = displayLeads.map((l) => ({
     Nombre: l.name ?? '',
     Email: l.email ?? '',
     Teléfono: l.phone ?? '',
     Empresa: l.company ?? '',
+    Score: l.score ?? '',
+    Clasificación: l.classification ?? '',
     Resumen: l.summary,
+    'Siguiente acción': l.next_action ?? '',
     Fecha: l.created_at,
   }))
 
@@ -174,22 +206,28 @@ function ReportsContent({
         <TrendChart data={reports.trend} />
       </div>
 
-      {/* Leads list — REP-09 / REP-10 */}
+      {/* Leads list — REP-09/10 + NEX-06 */}
       <div className="rounded-xl border bg-card">
-        <div className="flex items-center justify-between gap-4 border-b px-5 py-4">
+        <div className="flex flex-wrap items-center justify-between gap-4 border-b px-5 py-4">
           <div>
             <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
               <Users className="size-4 text-nexus-purple" />
               Leads capturados
             </h2>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Historial completo con datos de contacto y transcripción · REP-09/10
+              {displayLeads.length} de {reports.leadsList.length} leads · con calificación inteligente (NEX-01)
             </p>
           </div>
-          <CsvExportButton
-            filename={`leads-${reports.customerName.toLowerCase().replace(/\s+/g, '-')}-${period}.csv`}
-            rows={leadsCsvRows}
-          />
+          <div className="flex flex-wrap items-center gap-2">
+            {/* NEX-06: filtro por clasificación */}
+            <Suspense>
+              <LeadFilters currentSort={sortLeads} currentFilter={filterClass} />
+            </Suspense>
+            <CsvExportButton
+              filename={`leads-${reports.customerName.toLowerCase().replace(/\s+/g, '-')}-${period}.csv`}
+              rows={leadsCsvRows}
+            />
+          </div>
         </div>
 
         {reports.leadsList.length === 0 ? (
@@ -202,20 +240,29 @@ function ReportsContent({
               Los contactos capturados por el chatbot aparecerán aquí.
             </p>
           </div>
+        ) : displayLeads.length === 0 ? (
+          <div className="flex flex-col items-center justify-center gap-3 py-10 text-center">
+            <Filter className="size-8 text-muted-foreground/40" />
+            <p className="text-sm text-muted-foreground">Sin leads con clasificación &quot;{filterClass}&quot;</p>
+          </div>
         ) : (
           <Table>
             <TableHeader>
               <TableRow className="hover:bg-transparent">
+                <TableHead>Score · Clase</TableHead>
                 <TableHead>Contacto</TableHead>
                 <TableHead>Empresa</TableHead>
-                <TableHead className="max-w-xs">Resumen</TableHead>
+                <TableHead className="max-w-xs">Resumen · Siguiente acción</TableHead>
                 <TableHead>Fecha</TableHead>
                 <TableHead>Conversación</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {reports.leadsList.map((lead) => (
+              {displayLeads.map((lead) => (
                 <TableRow key={lead.id}>
+                  <TableCell className="w-[120px]">
+                    <ScoreBadge score={lead.score} classification={lead.classification} />
+                  </TableCell>
                   <TableCell>
                     <div className="flex flex-col gap-1">
                       {lead.name && (
@@ -257,6 +304,12 @@ function ReportsContent({
                     ) : (
                       <span className="text-xs text-muted-foreground/50">—</span>
                     )}
+                    {lead.next_action && (
+                      <p className="mt-1 flex items-start gap-1 text-xs text-nexus-purple line-clamp-1">
+                        <Lightbulb className="size-3 mt-0.5 shrink-0" />
+                        {lead.next_action}
+                      </p>
+                    )}
                   </TableCell>
                   <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
                     {fmtDateShort(lead.created_at)}
@@ -287,14 +340,17 @@ export default async function CustomerReportsPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>
-  searchParams: Promise<{ period?: string }>
+  searchParams: Promise<{ period?: string; sort?: string; filter?: string }>
 }) {
   const user = await getSessionUser()
   if (!user || user.role !== 'owner') redirect('/login')
 
-  const [{ id }, { period: rawPeriod }] = await Promise.all([params, searchParams])
+  const [{ id }, { period: rawPeriod, sort: rawSort, filter: rawFilter }] = await Promise.all([params, searchParams])
   const customerId = Number(id)
   const period: Period = isPeriod(rawPeriod) ? rawPeriod : 'month'
+  const sortLeads: 'date' | 'score' = rawSort === 'score' ? 'score' : 'date'
+  const validClasses = ['Alta', 'Media', 'Baja']
+  const filterClass = rawFilter && validClasses.includes(rawFilter) ? rawFilter : null
 
   let reports: CustomerReports | null = null
   let loadError: string | null = null
@@ -379,7 +435,7 @@ export default async function CustomerReportsPage({
         </div>
       )}
 
-      {reports && <ReportsContent reports={reports} period={period} />}
+      {reports && <ReportsContent reports={reports} period={period} sortLeads={sortLeads} filterClass={filterClass} />}
     </div>
   )
 }

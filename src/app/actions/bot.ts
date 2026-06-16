@@ -40,6 +40,8 @@ export interface BotConfig {
   fallbackMessage: string
   isBotActive: boolean
   websiteUrl: string
+  scoringThreshold: number
+  scoringRubric: { criterion: string; maxScore: number; description: string }[]
   snippet: string
   widgetUrl: string
 }

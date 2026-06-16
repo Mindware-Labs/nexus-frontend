@@ -47,6 +47,7 @@ type RuleItem = { title: string; instruction: string }
 type PricingItem = { label: string; fromPrice: string; toPrice: string; currency: string; notes: string }
 type QuestionItem = { question: string; purpose: string }
 type ContactField = { key: string; label: string; enabled: boolean; required: boolean }
+type ScoringCriterion = { criterion: string; maxScore: number; description: string }
 
 // ── Small helpers ─────────────────────────────────────────────────────────────
 
@@ -342,6 +343,17 @@ export function BotConfigForm({ config, customerId }: { config: BotConfig; custo
   const [launcherText, setLauncherText] = useState(config.launcherText)
   const [websiteUrl, setWebsiteUrl] = useState(config.websiteUrl)
   const [isBotActive, setIsBotActive] = useState(config.isBotActive)
+  const [scoringThreshold, setScoringThreshold] = useState(config.scoringThreshold ?? 70)
+  const [scoringRubric, setScoringRubric] = useState<ScoringCriterion[]>(
+    config.scoringRubric?.length
+      ? (config.scoringRubric as ScoringCriterion[])
+      : [
+          { criterion: 'Claridad de necesidad', maxScore: 25, description: 'El visitante expresó claramente qué necesita' },
+          { criterion: 'Presupuesto disponible', maxScore: 25, description: 'Mencionó tener presupuesto o capacidad de pago' },
+          { criterion: 'Urgencia', maxScore: 25, description: 'Tiene una necesidad urgente o un plazo definido' },
+          { criterion: 'Autoridad de compra', maxScore: 25, description: 'Puede tomar o influir en la decisión de compra' },
+        ],
+  )
 
   // ── Save ────────────────────────────────────────────────────────────────────
   function handleSave() {
@@ -370,6 +382,8 @@ export function BotConfigForm({ config, customerId }: { config: BotConfig; custo
         welcomeMessage,
         fallbackMessage,
         websiteUrl,
+        scoringThreshold,
+        scoringRubric,
       })
       setSaveStatus(result.status === 'success' ? 'success' : 'error')
       setSaveMsg(result.status === 'error' ? result.message : '')
@@ -637,6 +651,97 @@ export function BotConfigForm({ config, customerId }: { config: BotConfig; custo
 
         <Field label="BOT-17 · Emails de destino de notificaciones de captura de lead" hint="Escribe un email y presiona Enter.">
           <TagInput values={notificationEmails} onChange={setNotificationEmails} placeholder="equipo@empresa.com" type="email" />
+        </Field>
+      </Section>
+
+      {/* NEX-01/05: Calificación inteligente de leads */}
+      <Section
+        id="scoring"
+        title="NEX · Calificación inteligente de leads"
+        hint="El LLM evalúa cada lead según la rúbrica y asigna un score de 0 a 100. Leads con score ≥ umbral se marcan como calificados y reciben notificación prioritaria."
+      >
+        <Field label="NEX-05 · Umbral de calificación (0–100)" hint={`Leads con score ≥ ${scoringThreshold} se marcan como ⭐ Calificados.`}>
+          <div className="flex items-center gap-3">
+            <input
+              type="range"
+              min={0}
+              max={100}
+              step={5}
+              value={scoringThreshold}
+              onChange={(e) => setScoringThreshold(Number(e.target.value))}
+              className="flex-1 accent-nexus-purple"
+            />
+            <Input
+              type="number"
+              min={0}
+              max={100}
+              value={scoringThreshold}
+              onChange={(e) => setScoringThreshold(Math.max(0, Math.min(100, Number(e.target.value))))}
+              className="w-20 text-center"
+            />
+          </div>
+        </Field>
+
+        <Field
+          label="NEX-01 · Rúbrica de calificación"
+          hint="Criterios usados por el LLM para evaluar leads. La suma de maxScore debería ser 100."
+        >
+          <div className="space-y-3">
+            {scoringRubric.map((item, i) => (
+              <div key={i} className="grid grid-cols-[2fr_1fr_auto] gap-2 items-start rounded-lg border bg-muted/20 p-3">
+                <div className="space-y-2">
+                  <Input
+                    value={item.criterion}
+                    onChange={(e) => setScoringRubric(scoringRubric.map((r, j) => j === i ? { ...r, criterion: e.target.value } : r))}
+                    placeholder="Nombre del criterio"
+                    maxLength={120}
+                  />
+                  <Input
+                    value={item.description}
+                    onChange={(e) => setScoringRubric(scoringRubric.map((r, j) => j === i ? { ...r, description: e.target.value } : r))}
+                    placeholder="Descripción: qué evalúa este criterio"
+                    maxLength={400}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">Pts máx</Label>
+                  <Input
+                    type="number"
+                    min={1}
+                    max={100}
+                    value={item.maxScore}
+                    onChange={(e) => setScoringRubric(scoringRubric.map((r, j) => j === i ? { ...r, maxScore: Number(e.target.value) } : r))}
+                    className="text-center"
+                  />
+                </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setScoringRubric(scoringRubric.filter((_, j) => j !== i))}
+                  className="mt-6 text-muted-foreground hover:text-destructive"
+                >
+                  <Minus className="size-4" />
+                </Button>
+              </div>
+            ))}
+            <div className="flex items-center justify-between">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setScoringRubric([...scoringRubric, { criterion: '', maxScore: 25, description: '' }])}
+                disabled={scoringRubric.length >= 10}
+              >
+                <Plus className="mr-1.5 size-3.5" /> Agregar criterio
+              </Button>
+              {scoringRubric.length > 0 && (
+                <span className={`text-xs ${scoringRubric.reduce((s, r) => s + r.maxScore, 0) === 100 ? 'text-green-600' : 'text-amber-600'}`}>
+                  Total: {scoringRubric.reduce((s, r) => s + r.maxScore, 0)} / 100 pts
+                </span>
+              )}
+            </div>
+          </div>
         </Field>
       </Section>
 

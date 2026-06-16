@@ -52,6 +52,9 @@ export interface LeadRow {
   summary: string
   transcript: Array<{ role: 'user' | 'bot'; text: string }>
   created_at: string
+  score: number | null
+  classification: string | null
+  next_action: string | null
 }
 
 export interface CustomerReports {
