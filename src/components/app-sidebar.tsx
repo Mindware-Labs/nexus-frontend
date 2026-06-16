@@ -1,6 +1,7 @@
 "use client"
 
 import {
+  BarChart2,
   Building2,
   LayoutDashboard,
   LogOut,
@@ -38,6 +39,12 @@ const navItems = [
     items: [
       { title: "Clientes", url: "/dashboard/customers", icon: Users },
       { title: "Tenants", url: "/dashboard/tenants", icon: Building2, badge: "Próximo" },
+    ],
+  },
+  {
+    group: "Analítica",
+    items: [
+      { title: "Reportes", url: "/dashboard/reports", icon: BarChart2 },
     ],
   },
 ]

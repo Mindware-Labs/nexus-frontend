@@ -434,11 +434,11 @@
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
   --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
+  --chart-1: oklch(0.38 0.13 307);   /* nexus-purple  #522566 */
+  --chart-2: oklch(0.64 0.13 307);   /* nexus-lavender #ad74c3 */
+  --chart-3: oklch(0.73 0.16 162);   /* nexus-mint    #34d399 */
+  --chart-4: oklch(0.67 0.19 357);   /* nexus-coral   #fb7185 */
+  --chart-5: oklch(0.26 0.09 307);   /* nexus-deep    #3d1a4e */
   --radius: 0.625rem;
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
