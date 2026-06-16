@@ -41,6 +41,12 @@ function getErrorMessage(reason: unknown): string | null {
   return reason instanceof Error ? reason.message : null
 }
 
+function isRedirectError(err: unknown): boolean {
+  if (!(err instanceof Error)) return false
+  const e = err as Error & { digest?: string }
+  return e.message === 'NEXT_REDIRECT' || (e.digest?.startsWith('NEXT_REDIRECT') ?? false)
+}
+
 function parseFilters(raw: {
   name?: string
   tenantId?: string
@@ -113,6 +119,11 @@ export default async function CustomersPage({ searchParams }: CustomersPageProps
     listActiveTenants(),
     listTenants(),
   ])
+
+  // redirect() throws a special Next.js error that must not be swallowed by allSettled.
+  for (const result of [customersResult, activeTenantsResult, tenantsResult]) {
+    if (result.status === 'rejected' && isRedirectError(result.reason)) throw result.reason
+  }
 
   const customers = customersResult.status === "fulfilled" ? customersResult.value : []
   const activeTenants = activeTenantsResult.status === "fulfilled" ? activeTenantsResult.value : []

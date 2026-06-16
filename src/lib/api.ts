@@ -59,19 +59,36 @@ export async function getAccessToken(): Promise<string | null> {
   return refreshAccessToken()
 }
 
+function buildHeaders(token: string, extra?: RequestInit['headers']): Record<string, string> {
+  return {
+    'Content-Type': 'application/json',
+    ...(extra as Record<string, string> | undefined),
+    Authorization: `Bearer ${token}`,
+  }
+}
+
 export async function backendFetch(path: string, init?: RequestInit): Promise<Response> {
   const accessToken = await getAccessToken()
   if (!accessToken) {
     return new Response(JSON.stringify({ message: 'No autenticado' }), { status: 401 })
   }
 
-  return fetch(`${BACKEND}${path}`, {
+  const res = await fetch(`${BACKEND}${path}`, {
     ...init,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(init?.headers as Record<string, string> | undefined),
-      Authorization: `Bearer ${accessToken}`,
-    },
+    headers: buildHeaders(accessToken, init?.headers),
     cache: 'no-store',
   })
+
+  // If the backend still rejects the token, attempt one refresh + retry.
+  if (res.status === 401) {
+    const newToken = await refreshAccessToken()
+    if (!newToken) return res
+    return fetch(`${BACKEND}${path}`, {
+      ...init,
+      headers: buildHeaders(newToken, init?.headers),
+      cache: 'no-store',
+    })
+  }
+
+  return res
 }

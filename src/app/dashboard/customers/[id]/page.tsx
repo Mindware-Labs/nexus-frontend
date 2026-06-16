@@ -21,6 +21,8 @@ import { getSessionUser } from '@/lib/session'
 import { getCustomerReports, type Period, type CustomerReports } from '@/app/actions/reports'
 import { PeriodSelector } from '@/components/reports/period-selector'
 import { CsvExportButton } from '@/components/reports/csv-export-button'
+import { ExcelExportButton } from '@/components/reports/excel-export-button'
+import { PdfExportButton } from '@/components/reports/pdf-export-button'
 import { TrendChart, ChartLegend } from '@/components/reports/trend-chart'
 import { TranscriptDialog } from '@/components/reports/transcript-dialog'
 import { Button } from '@/components/ui/button'
@@ -311,6 +313,11 @@ export default async function CustomerReportsPage({
     all: 'todo el historial',
   }
 
+  const periodLabel = periodLabels[period]
+  const exportSlug = reports
+    ? reports.customerName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
+    : `cliente-${customerId}`
+
   return (
     <div className="flex flex-1 flex-col gap-6 p-6">
       {/* Header */}
@@ -330,7 +337,21 @@ export default async function CustomerReportsPage({
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2 pl-12 sm:pl-0">
+        <div className="flex flex-wrap items-center gap-2 pl-12 sm:pl-0">
+          {reports && (
+            <>
+              <ExcelExportButton
+                reports={reports}
+                periodLabel={periodLabel}
+                filename={`reporte-${exportSlug}-${period}.xlsx`}
+              />
+              <PdfExportButton
+                reports={reports}
+                periodLabel={periodLabel}
+                filename={`reporte-${exportSlug}-${period}.pdf`}
+              />
+            </>
+          )}
           <Button asChild variant="outline" size="sm">
             <Link href={`/dashboard/bots/${customerId}`}>
               <Bot className="size-4" />

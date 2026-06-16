@@ -4,6 +4,16 @@ import { backendFetch } from '@/lib/api'
 
 export type Period = '7d' | '30d' | 'month' | '3m' | 'all'
 
+// REP-12 + REP-14
+export interface TopicsReport {
+  topKeywords: Array<{ word: string; count: number }>
+  aiTopics: Array<{ topic: string; count: number }>
+  intents: Array<{ intent: string; count: number }>
+  sentiments: { positive: number; neutral: number; negative: number }
+  totalAnalyzed: number
+  pendingAnalysis: number
+}
+
 export interface TrendPoint {
   date: string
   conversations: number
@@ -139,4 +149,57 @@ export async function getCustomerReports(
   }
 
   return res.json() as Promise<CustomerReports>
+}
+
+export async function getTopicsReport(period: Period): Promise<TopicsReport> {
+  const { from, to } = periodToDates(period)
+  const params = new URLSearchParams({ from, to })
+
+  let res: Response
+  try {
+    res = await backendFetch(`/bot/reports/topics?${params}`)
+  } catch {
+    throw new Error('No se pudo conectar con el servidor')
+  }
+
+  if (res.status === 401) redirect('/login')
+  if (!res.ok) {
+    const body: BackendError = await res.json().catch(() => ({}))
+    throw new Error(extractMessage(body, 'No se pudo cargar el análisis de temas'))
+  }
+
+  return res.json() as Promise<TopicsReport>
+}
+
+export async function getCustomerTopicsReport(
+  customerId: number,
+  period: Period,
+): Promise<TopicsReport> {
+  const { from, to } = periodToDates(period)
+  const params = new URLSearchParams({ from, to })
+
+  let res: Response
+  try {
+    res = await backendFetch(`/bot/customers/${customerId}/topics?${params}`)
+  } catch {
+    throw new Error('No se pudo conectar con el servidor')
+  }
+
+  if (res.status === 401) redirect('/login')
+  if (!res.ok) {
+    const body: BackendError = await res.json().catch(() => ({}))
+    throw new Error(extractMessage(body, 'No se pudo cargar el análisis de temas del cliente'))
+  }
+
+  return res.json() as Promise<TopicsReport>
+}
+
+export async function triggerTopicBatch(): Promise<void> {
+  let res: Response
+  try {
+    res = await backendFetch('/bot/reports/topics/run-batch', { method: 'POST' })
+  } catch {
+    throw new Error('No se pudo conectar con el servidor')
+  }
+  if (res.status === 401) redirect('/login')
 }

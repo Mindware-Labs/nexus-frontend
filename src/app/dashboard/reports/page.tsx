@@ -12,10 +12,12 @@ import {
   TrendingUp,
 } from 'lucide-react'
 import { getSessionUser } from '@/lib/session'
-import { getGlobalReports, type Period, type GlobalReports } from '@/app/actions/reports'
+import { getGlobalReports, getTopicsReport, type Period, type GlobalReports, type TopicsReport } from '@/app/actions/reports'
+import { TopicsPanel } from '@/components/reports/topics-panel'
 import { PeriodSelector } from '@/components/reports/period-selector'
 import { CsvExportButton } from '@/components/reports/csv-export-button'
 import { TrendChart, ChartLegend } from '@/components/reports/trend-chart'
+import { CustomerReportExport } from '@/components/reports/customer-report-export'
 import {
   Table,
   TableBody,
@@ -65,7 +67,17 @@ function StatCard({
   )
 }
 
-function ReportsContent({ reports, period }: { reports: GlobalReports; period: Period }) {
+function ReportsContent({
+  reports,
+  topics,
+  period,
+  periodLabel,
+}: {
+  reports: GlobalReports
+  topics: TopicsReport | null
+  period: Period
+  periodLabel: string
+}) {
   const rankingCsvRows = reports.clientRanking.map((r) => ({
     Cliente: r.customerName,
     Conversaciones: r.conversations,
@@ -169,7 +181,7 @@ function ReportsContent({ reports, period }: { reports: GlobalReports; period: P
                 <TableHead className="text-right">Leads</TableHead>
                 <TableHead className="text-right">Tokens</TableHead>
                 <TableHead className="text-right">Costo est.</TableHead>
-                <TableHead className="w-8" />
+                <TableHead className="w-32" />
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -190,12 +202,12 @@ function ReportsContent({ reports, period }: { reports: GlobalReports; period: P
                     {fmtCost(r.estimatedCostUsd)}
                   </TableCell>
                   <TableCell>
-                    <Link
-                      href={`/dashboard/customers/${r.customerId}?period=${period}`}
-                      className="text-xs text-nexus-purple hover:underline"
-                    >
-                      Ver
-                    </Link>
+                    <CustomerReportExport
+                      customerId={r.customerId}
+                      customerName={r.customerName}
+                      period={period}
+                      periodLabel={periodLabel}
+                    />
                   </TableCell>
                 </TableRow>
               ))}
@@ -203,6 +215,24 @@ function ReportsContent({ reports, period }: { reports: GlobalReports; period: P
           </Table>
         )}
       </div>
+
+      {/* REP-12 + REP-14: Topics analysis */}
+      {topics && (
+        <div className="rounded-xl border bg-card">
+          <div className="border-b px-5 py-4">
+            <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
+              <BarChart2 className="size-4 text-nexus-purple" />
+              Análisis de temas · REP-12 / REP-14
+            </h2>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Palabras clave de leads y análisis con IA Gemini
+            </p>
+          </div>
+          <div className="p-5">
+            <TopicsPanel topics={topics} />
+          </div>
+        </div>
+      )}
     </>
   )
 }
@@ -219,12 +249,32 @@ export default async function ReportsPage({
   const period: Period = isPeriod(rawPeriod) ? rawPeriod : 'month'
 
   let reports: GlobalReports | null = null
+  let topics: TopicsReport | null = null
   let loadError: string | null = null
 
-  try {
-    reports = await getGlobalReports(period)
-  } catch (err) {
-    loadError = err instanceof Error ? err.message : 'No se pudieron cargar los reportes'
+  const [reportsResult, topicsResult] = await Promise.allSettled([
+    getGlobalReports(period),
+    getTopicsReport(period),
+  ])
+
+  // Propagate redirect errors (expired session)
+  for (const r of [reportsResult, topicsResult]) {
+    if (r.status === 'rejected') {
+      const e = r.reason as Error & { digest?: string }
+      if (e?.message === 'NEXT_REDIRECT' || e?.digest?.startsWith('NEXT_REDIRECT')) throw e
+    }
+  }
+
+  if (reportsResult.status === 'fulfilled') {
+    reports = reportsResult.value
+  } else {
+    loadError = reportsResult.reason instanceof Error
+      ? reportsResult.reason.message
+      : 'No se pudieron cargar los reportes'
+  }
+
+  if (topicsResult.status === 'fulfilled') {
+    topics = topicsResult.value
   }
 
   const periodLabels: Record<Period, string> = {
@@ -260,18 +310,14 @@ export default async function ReportsPage({
         </div>
       )}
 
-      {reports && <ReportsContent reports={reports} period={period} />}
-
-      {/* REP-12/14/15 placeholder */}
-      <div className="rounded-xl border border-dashed bg-muted/20 p-5 text-center">
-        <p className="text-sm font-medium text-muted-foreground">
-          Análisis de temas frecuentes (REP-12) · Batch de temas con IA (REP-14) · Tablas
-          agregadas diarias (REP-15)
-        </p>
-        <p className="mt-1 text-xs text-muted-foreground/60">
-          Requieren worker de agregación diaria — próximamente
-        </p>
-      </div>
+      {reports && (
+        <ReportsContent
+          reports={reports}
+          topics={topics}
+          period={period}
+          periodLabel={periodLabels[period]}
+        />
+      )}
     </div>
   )
 }
