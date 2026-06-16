@@ -61,7 +61,7 @@ export interface CustomerReports {
   leadsList: LeadRow[]
 }
 
-export function periodToDates(period: Period): { from: string; to: string } {
+function periodToDates(period: Period): { from: string; to: string } {
   const now = new Date()
   const to = now.toISOString().split('T')[0]
 
