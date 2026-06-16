@@ -30,6 +30,7 @@ import { ExcelExportButton } from '@/components/reports/excel-export-button'
 import { PdfExportButton } from '@/components/reports/pdf-export-button'
 import { TrendChart, ChartLegend } from '@/components/reports/trend-chart'
 import { TranscriptDialog } from '@/components/reports/transcript-dialog'
+import { ScoringBreakdownDialog } from '@/components/reports/scoring-breakdown-dialog'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -315,10 +316,20 @@ function ReportsContent({
                     {fmtDateShort(lead.created_at)}
                   </TableCell>
                   <TableCell>
-                    <TranscriptDialog
-                      transcript={lead.transcript}
-                      leadName={lead.name}
-                    />
+                    <div className="flex flex-col gap-1">
+                      <TranscriptDialog
+                        transcript={lead.transcript}
+                        leadName={lead.name}
+                      />
+                      {lead.scoring_breakdown && lead.scoring_breakdown.length > 0 && lead.score != null && (
+                        <ScoringBreakdownDialog
+                          breakdown={lead.scoring_breakdown}
+                          score={lead.score}
+                          classification={lead.classification}
+                          leadName={lead.name}
+                        />
+                      )}
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}

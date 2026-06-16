@@ -43,6 +43,14 @@ export interface GlobalReports {
   trend: TrendPoint[]
 }
 
+export interface ScoringBreakdownItem {
+  criterion: string
+  maxScore: number
+  earned: number
+  met: boolean
+  evidence: string
+}
+
 export interface LeadRow {
   id: string
   name: string | null
@@ -55,6 +63,7 @@ export interface LeadRow {
   score: number | null
   classification: string | null
   next_action: string | null
+  scoring_breakdown: ScoringBreakdownItem[] | null
 }
 
 export interface CustomerReports {
