@@ -70,6 +70,7 @@ export interface LeadListItem {
   classification: string | null
   status: LeadStatus
   next_action: string | null
+  scoring_breakdown: ScoringBreakdownItem[] | null
 }
 
 export interface LeadDetail extends LeadListItem {
