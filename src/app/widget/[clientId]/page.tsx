@@ -19,6 +19,8 @@ interface WidgetConfig {
   launcherText: string
   welcomeMessage: string
   closingMessage: string
+  consentText?: string
+  privacyPolicyUrl?: string
 }
 
 interface Message {
@@ -253,6 +255,20 @@ export default function WidgetPage({ params }: { params: Promise<{ clientId: str
           >
             <Send size={16} />
           </button>
+        </div>
+      )}
+
+      {/* Privacy footer */}
+      {(config.privacyPolicyUrl || config.consentText) && (
+        <div style={{ textAlign: 'center', padding: '5px 12px 7px', borderTop: '1px solid #f0f0f0', background: '#fafafa', flexShrink: 0 }}>
+          <a
+            href={config.privacyPolicyUrl || '/privacidad'}
+            target="_blank"
+            rel="noreferrer"
+            style={{ fontSize: 10, color: '#aaa', textDecoration: 'none', letterSpacing: '0.01em' }}
+          >
+            🔒 Política de privacidad
+          </a>
         </div>
       )}
 
