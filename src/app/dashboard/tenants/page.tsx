@@ -2,6 +2,7 @@ import { redirect } from "next/navigation"
 import { AlertCircle, Building2 } from "lucide-react"
 import { getSessionUser } from "@/lib/session"
 import { listTenants } from "@/app/actions/tenants"
+import { getPlans } from "@/app/actions/plans"
 import { PLAN_LABELS } from "@/lib/schemas/tenants"
 import { AddTenantDialog } from "./add-tenant-dialog"
 import { EditTenantDialog } from "./edit-tenant-dialog"
@@ -47,8 +48,9 @@ export default async function TenantsPage() {
   const user = await getSessionUser()
   if (!user || user.role !== "owner") redirect("/login")
 
-  const [tenantsResult] = await Promise.allSettled([listTenants()])
+  const [tenantsResult, plansResult] = await Promise.allSettled([listTenants(), getPlans()])
   const tenants = tenantsResult.status === "fulfilled" ? tenantsResult.value : []
+  const plans = plansResult.status === "fulfilled" ? plansResult.value : []
   const tenantsLoadMessage =
     tenantsResult.status === "rejected" ? getErrorMessage(tenantsResult.reason) : null
 
@@ -158,9 +160,11 @@ export default async function TenantsPage() {
                     </code>
                   </TableCell>
                   <TableCell>
-                    <Badge variant={PLAN_VARIANT[tenant.plan]}>
-                      {PLAN_LABELS[tenant.plan]}
-                    </Badge>
+                    {tenant.plan_name ? (
+                      <Badge variant="info">{tenant.plan_name}</Badge>
+                    ) : (
+                      <Badge variant={PLAN_VARIANT[tenant.plan]}>{PLAN_LABELS[tenant.plan]}</Badge>
+                    )}
                   </TableCell>
                   <TableCell>
                     {tenant.is_active ? (
@@ -173,7 +177,7 @@ export default async function TenantsPage() {
                     {formatDate(tenant.created_at)}
                   </TableCell>
                   <TableCell>
-                    <EditTenantDialog tenant={tenant} />
+                    <EditTenantDialog tenant={tenant} plans={plans} />
                   </TableCell>
                 </TableRow>
               ))}

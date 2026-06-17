@@ -4,6 +4,7 @@ import {
   BarChart2,
   Building2,
   ClipboardList,
+  CreditCard,
   KeyRound,
   LayoutDashboard,
   Shield,
@@ -40,6 +41,7 @@ const navItems = [
     items: [
       { title: "Clientes", url: "/dashboard/customers", icon: Users },
       { title: "Tenants", url: "/dashboard/tenants", icon: Building2 },
+      { title: "Planes", url: "/dashboard/plans", icon: CreditCard },
     ],
   },
   {

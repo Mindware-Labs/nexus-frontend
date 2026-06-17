@@ -320,7 +320,9 @@ export default async function CustomersPage({ searchParams }: CustomersPageProps
                     </TableCell>
                     <TableCell>
                       {tenant ? (
-                        <Badge variant="outline">{PLAN_LABELS[tenant.plan]}</Badge>
+                        <Badge variant="outline">
+                          {tenant.plan_name ?? PLAN_LABELS[tenant.plan]}
+                        </Badge>
                       ) : (
                         <span className="text-xs text-muted-foreground/60">-</span>
                       )}

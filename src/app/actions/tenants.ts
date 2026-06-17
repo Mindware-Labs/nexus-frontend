@@ -14,6 +14,8 @@ export interface Tenant {
   name: string
   slug: string
   plan: 'trial' | 'starter' | 'pro' | 'enterprise'
+  plan_id: number | null
+  plan_name: string | null
   is_active: boolean
   created_at: string
   updated_at: string
@@ -52,6 +54,8 @@ function toTenant(value: unknown): Tenant | null {
     name: String(row.name ?? ''),
     slug: String(row.slug ?? ''),
     plan: toTenantPlan(row.plan),
+    plan_id: row.plan_id != null ? Number(row.plan_id) : null,
+    plan_name: row.plan_name ? String(row.plan_name) : null,
     is_active: row.is_active === true,
     created_at: String(row.created_at ?? ''),
     updated_at: String(row.updated_at ?? ''),
@@ -112,6 +116,9 @@ export async function updateTenantAction(
   _prev: TenantActionState,
   formData: FormData,
 ): Promise<TenantActionState> {
+  const rawPlanId = formData.get('planId')
+  const planId = rawPlanId === 'null' ? null : rawPlanId ? Number(rawPlanId) : undefined
+
   const parsed = UpdateTenantSchema.safeParse({
     name: formData.get('name') || undefined,
     plan: formData.get('plan') || undefined,
@@ -126,7 +133,7 @@ export async function updateTenantAction(
   try {
     res = await backendFetch(`/tenants/${id}`, {
       method: 'PATCH',
-      body: JSON.stringify(parsed.data),
+      body: JSON.stringify({ ...parsed.data, ...(planId !== undefined ? { planId } : {}) }),
     })
   } catch {
     return { status: 'error', message: 'No se pudo conectar con el servidor' }
@@ -138,6 +145,8 @@ export async function updateTenantAction(
   }
 
   revalidatePath('/dashboard/tenants')
+  revalidatePath('/dashboard/customers')
+  revalidatePath('/panel/plan')
   return { status: 'success', tenantName: parsed.data.name ?? '' }
 }
 

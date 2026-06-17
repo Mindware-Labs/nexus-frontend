@@ -4,6 +4,7 @@ import {
   BarChart2,
   Bell,
   Building2,
+  CreditCard,
   HelpCircle,
   LayoutDashboard,
   MessageSquare,
@@ -53,6 +54,7 @@ const navItems = [
   {
     group: "Cuenta",
     items: [
+      { title: "Mi Plan", url: "/panel/plan", icon: CreditCard },
       { title: "Notificaciones", url: "/panel/settings", icon: Bell },
       { title: "Mi Empresa", url: "/panel/company", icon: Building2 },
       { title: "Privacidad", url: "/panel/privacy", icon: Shield },

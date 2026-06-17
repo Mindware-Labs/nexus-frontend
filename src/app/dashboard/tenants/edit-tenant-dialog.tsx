@@ -4,6 +4,7 @@ import { startTransition, useActionState, useEffect, useState } from "react"
 import { AlertCircle, Loader2, Pencil } from "lucide-react"
 import { updateTenantAction, type Tenant, type TenantActionState } from "@/app/actions/tenants"
 import { PLAN_LABELS, TENANT_PLANS } from "@/lib/schemas/tenants"
+import type { Plan } from "@/app/actions/plans"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -25,7 +26,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 
-export function EditTenantDialog({ tenant }: { tenant: Tenant }) {
+export function EditTenantDialog({ tenant, plans = [] }: { tenant: Tenant; plans?: Plan[] }) {
   const [open, setOpen] = useState(false)
 
   const boundAction = updateTenantAction.bind(null, tenant.tenant_id)
@@ -35,6 +36,7 @@ export function EditTenantDialog({ tenant }: { tenant: Tenant }) {
   )
 
   const [selectedPlan, setSelectedPlan] = useState(tenant.plan)
+  const [selectedPlanId, setSelectedPlanId] = useState<string>(tenant.plan_id ? String(tenant.plan_id) : 'none')
   const [selectedActive, setSelectedActive] = useState(String(tenant.is_active))
   const [nameError, setNameError] = useState<string | undefined>()
 
@@ -48,6 +50,7 @@ export function EditTenantDialog({ tenant }: { tenant: Tenant }) {
   useEffect(() => {
     if (open) {
       setSelectedPlan(tenant.plan)
+      setSelectedPlanId(tenant.plan_id ? String(tenant.plan_id) : 'none')
       setSelectedActive(String(tenant.is_active))
       setNameError(undefined)
     }
@@ -63,6 +66,7 @@ export function EditTenantDialog({ tenant }: { tenant: Tenant }) {
     }
     setNameError(undefined)
     fd.set("plan", selectedPlan)
+    fd.set("planId", selectedPlanId === 'none' ? 'null' : selectedPlanId)
     fd.set("is_active", selectedActive)
     startTransition(() => formAction(fd))
   }
@@ -110,19 +114,28 @@ export function EditTenantDialog({ tenant }: { tenant: Tenant }) {
             {nameError && <p className="text-xs text-destructive">{nameError}</p>}
           </div>
 
-          <div className="space-y-1.5">
-            <Label>Plan</Label>
-            <Select value={selectedPlan} onValueChange={(v) => setSelectedPlan(v as typeof selectedPlan)} disabled={isPending}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {TENANT_PLANS.map((p) => (
-                  <SelectItem key={p} value={p}>{PLAN_LABELS[p]}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          {plans.length > 0 && (
+            <div className="space-y-1.5">
+              <Label>Plan configurado</Label>
+              <Select value={selectedPlanId} onValueChange={setSelectedPlanId} disabled={isPending}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Sin plan asignado" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Sin plan</SelectItem>
+                  {plans.filter((p) => p.isActive).map((p) => (
+                    <SelectItem key={p.id} value={String(p.id)}>
+                      {p.name}
+                      {p.priceMonthly > 0 ? ` — $${p.priceMonthly}/mes` : ' — Gratis'}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Determina los límites de conversaciones, tokens y leads por mes.
+              </p>
+            </div>
+          )}
 
           <div className="space-y-1.5">
             <Label>Estado</Label>
