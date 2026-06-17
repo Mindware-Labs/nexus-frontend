@@ -1,6 +1,5 @@
 import { Shield } from 'lucide-react'
 import { Navbar } from '@/components/landing/navbar'
-import { Footer } from '@/components/landing/footer'
 import { MotionProvider } from '@/components/landing/motion-provider'
 import { DEFAULT_PRIVACY_POLICY } from '@/lib/default-privacy-policy'
 
@@ -86,7 +85,6 @@ export default async function PrivacidadPage() {
           </div>
         </div>
       </main>
-      <Footer />
     </MotionProvider>
   )
 }
