@@ -7,13 +7,14 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+  Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
 import {
   toggleBotActiveAction,
   updateBotConfigAction,
   type BotConfig,
 } from '@/app/actions/bot'
+import type { AvailableModel } from '@/app/actions/api-keys'
 
 import type { ProductItem, RuleItem, PricingItem, QuestionItem, ContactField, ScoringCriterion } from './_shared'
 import { SUPPORTED_LANGUAGES, TEMPERATURE_OPTIONS } from './_shared'
@@ -23,11 +24,20 @@ import { PreviewDialog, WidgetPreviewDialog } from './_dialogs'
 
 // ── Main form ─────────────────────────────────────────────────────────────────
 
-export function BotConfigForm({ config, customerId }: { config: BotConfig; customerId: number }) {
+export function BotConfigForm({
+  config,
+  customerId,
+  availableModels = [],
+}: {
+  config: BotConfig
+  customerId: number
+  availableModels?: AvailableModel[]
+}) {
   const [isPending, startTransition] = useTransition()
   const [saveStatus, setSaveStatus] = useState<'idle' | 'success' | 'error'>('idle')
   const [saveMsg, setSaveMsg] = useState('')
   const [isToggling, startToggle] = useTransition()
+  const [showNoUrlWarning, setShowNoUrlWarning] = useState(false)
   const [copied, setCopied] = useState(false)
 
   // ── State ───────────────────────────────────────────────────────────────────
@@ -57,6 +67,8 @@ export function BotConfigForm({ config, customerId }: { config: BotConfig; custo
   const [launcherText, setLauncherText]       = useState(config.launcherText)
   const [websiteUrl, setWebsiteUrl]           = useState(config.websiteUrl)
   const [isBotActive, setIsBotActive]         = useState(config.isBotActive)
+  const [llmProvider, setLlmProvider]         = useState(config.llmProvider || (availableModels[0]?.provider ?? 'gemini'))
+  const [llmModel, setLlmModel]               = useState(config.llmModel)
   const [scoringThreshold, setScoringThreshold] = useState(config.scoringThreshold ?? 70)
   const [scoringRubric, setScoringRubric]     = useState<ScoringCriterion[]>(
     config.scoringRubric?.length
@@ -74,12 +86,11 @@ export function BotConfigForm({ config, customerId }: { config: BotConfig; custo
   const rubricValid = scoringRubric.length === 0 || rubricTotal === 100
 
   // ── Handlers ────────────────────────────────────────────────────────────────
-  function handleSave() {
-    if (!rubricValid) return
+  function doSave() {
     startTransition(async () => {
       const result = await updateBotConfigAction(customerId, {
         assistantName, avatarMode, avatarValue, supportedLanguages, tone,
-        llmModel: config.llmModel, temperature, maxTokens, systemPromptHtml,
+        llmProvider, llmModel, temperature, maxTokens, systemPromptHtml,
         productsServices, businessRules, pricingRules, diagnosticQuestions,
         leadCaptureMoment, contactFields, notificationEmails, closingMessage,
         widgetPrimaryColor: widgetPrimaryColor.toUpperCase(), widgetPosition,
@@ -90,6 +101,15 @@ export function BotConfigForm({ config, customerId }: { config: BotConfig; custo
       setSaveMsg(result.status === 'error' ? result.message : '')
       if (result.status === 'success') setTimeout(() => setSaveStatus('idle'), 3000)
     })
+  }
+
+  function handleSave() {
+    if (!rubricValid) return
+    if (!websiteUrl.trim()) {
+      setShowNoUrlWarning(true)
+      return
+    }
+    doSave()
   }
 
   function handleToggle() {
@@ -250,6 +270,66 @@ export function BotConfigForm({ config, customerId }: { config: BotConfig; custo
             </SelectContent>
           </Select>
         </Field>
+
+        {availableModels.length > 0 ? (() => {
+          const selectedProvider = availableModels.find((p) => p.provider === llmProvider) ?? availableModels[0]
+          const providerModels = selectedProvider?.models ?? []
+          return (
+            <div className="grid grid-cols-2 gap-4">
+              <Field label="Proveedor de IA">
+                <Select
+                  value={llmProvider}
+                  onValueChange={(v) => {
+                    setLlmProvider(v)
+                    const prov = availableModels.find((p) => p.provider === v)
+                    if (prov?.models[0]) setLlmModel(prov.models[0])
+                  }}
+                >
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {availableModels.map((p) => (
+                      <SelectItem key={p.provider} value={p.provider}>{p.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </Field>
+              <Field label="Modelo">
+                <Select value={llmModel} onValueChange={setLlmModel}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {providerModels.map((m) => (
+                      <SelectItem key={m} value={m} className="font-mono text-xs">{m}</SelectItem>
+                    ))}
+                    {providerModels.length === 0 && (
+                      <SelectItem value={llmModel} className="font-mono text-xs">{llmModel}</SelectItem>
+                    )}
+                  </SelectContent>
+                </Select>
+              </Field>
+            </div>
+          )
+        })() : (
+          <div className="grid grid-cols-2 gap-4">
+            <Field label="Proveedor de IA">
+              <Input
+                value={llmProvider}
+                onChange={(e) => setLlmProvider(e.target.value)}
+                placeholder="gemini"
+              />
+            </Field>
+            <Field label="Modelo">
+              <Input
+                value={llmModel}
+                onChange={(e) => setLlmModel(e.target.value)}
+                placeholder="gemini-2.0-flash-lite"
+                className="font-mono text-xs"
+              />
+            </Field>
+            <div className="col-span-2 rounded-lg border border-amber-200 bg-amber-50 dark:border-amber-900/40 dark:bg-amber-950/20 px-3 py-2 text-xs text-amber-700 dark:text-amber-300">
+              No hay proveedores de IA configurados. Ve a <strong>API Keys</strong> para agregar uno y activar el selector dinámico.
+            </div>
+          </div>
+        )}
 
         <div className="grid grid-cols-2 gap-4">
           <Field label="BOT-06 · Temperatura / creatividad" hint={`Valor actual: ${temperature}`}>
@@ -550,6 +630,43 @@ export function BotConfigForm({ config, customerId }: { config: BotConfig; custo
           {isPending ? 'Guardando…' : 'Guardar cambios'}
         </Button>
       </div>
+
+      {/* Modal: advertencia URL no configurada */}
+      {showNoUrlWarning && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="mx-4 w-full max-w-md rounded-xl border bg-background p-6 shadow-xl">
+            <div className="mb-4 flex items-start gap-3">
+              <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-600">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>
+                  <path d="M12 9v4"/><path d="M12 17h.01"/>
+                </svg>
+              </div>
+              <div>
+                <h3 className="font-semibold text-foreground">URL del cliente no configurada</h3>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Sin la URL del sitio web del cliente, el widget quedará <strong>completamente bloqueado</strong>: el navegador rechazará la carga del iframe por política de seguridad (<code className="rounded bg-muted px-1 font-mono text-xs">frame-ancestors 'none'</code>) y el chatbot no será visible en ningún sitio.
+                </p>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Configura la URL en la sección <strong>Integración del widget</strong> antes de guardar, o guarda de todas formas si vas a configurarla después.
+                </p>
+              </div>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button type="button" variant="outline" onClick={() => setShowNoUrlWarning(false)}>
+                Volver y configurar
+              </Button>
+              <Button
+                type="button"
+                className="bg-amber-500 text-white hover:bg-amber-600"
+                onClick={() => { setShowNoUrlWarning(false); doSave() }}
+              >
+                Guardar de todas formas
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

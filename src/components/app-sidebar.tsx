@@ -3,6 +3,8 @@
 import {
   BarChart2,
   Building2,
+  ClipboardList,
+  KeyRound,
   LayoutDashboard,
   LogOut,
   Sparkles,
@@ -45,6 +47,13 @@ const navItems = [
     group: "Analítica",
     items: [
       { title: "Reportes", url: "/dashboard/reports", icon: BarChart2 },
+      { title: "Auditoría", url: "/dashboard/audit", icon: ClipboardList },
+    ],
+  },
+  {
+    group: "Sistema",
+    items: [
+      { title: "API Keys", url: "/dashboard/api-keys", icon: KeyRound },
     ],
   },
 ]

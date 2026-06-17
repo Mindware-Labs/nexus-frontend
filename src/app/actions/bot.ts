@@ -21,6 +21,7 @@ export interface BotConfig {
   avatarValue: string
   supportedLanguages: string[]
   tone: 'formal' | 'tecnico' | 'amigable' | 'consultivo' | 'directo'
+  llmProvider: string
   llmModel: string
   temperature: number
   maxTokens: number

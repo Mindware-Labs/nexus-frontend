@@ -6,15 +6,15 @@ const TOKEN_COOKIE = 'nx_token';
 const USER_COOKIE = 'nx_user';
 const ACCESS_COOKIE = 'nx_access';
 
-const SEVEN_DAYS = 7 * 24 * 60 * 60;
-const FOURTEEN_MIN = 14 * 60; // un minuto menos que el access token (15m) para margen
+const THIRTY_DAYS = 30 * 24 * 60 * 60;
+const EIGHT_HOURS = 8 * 60 * 60; // mismo tiempo que el access token JWT
 
 const BASE_OPTS = {
   httpOnly: true,
   secure: process.env.NODE_ENV === 'production',
   sameSite: 'lax' as const,
   path: '/',
-  maxAge: SEVEN_DAYS,
+  maxAge: THIRTY_DAYS,
 };
 
 export async function createSession(data: TokenPair): Promise<void> {
@@ -22,7 +22,7 @@ export async function createSession(data: TokenPair): Promise<void> {
   const { id, name, email, role, tenantId } = data;
 
   jar.set(TOKEN_COOKIE, data.refreshToken, BASE_OPTS);
-  jar.set(ACCESS_COOKIE, data.accessToken, { ...BASE_OPTS, maxAge: FOURTEEN_MIN });
+  jar.set(ACCESS_COOKIE, data.accessToken, { ...BASE_OPTS, maxAge: EIGHT_HOURS });
   jar.set(
     USER_COOKIE,
     Buffer.from(JSON.stringify({ id, name, email, role, tenantId })).toString('base64'),
@@ -60,5 +60,5 @@ export async function getStoredAccessToken(): Promise<string | null> {
 
 export async function updateStoredAccessToken(accessToken: string): Promise<void> {
   const jar = await cookies();
-  jar.set(ACCESS_COOKIE, accessToken, { ...BASE_OPTS, maxAge: FOURTEEN_MIN });
+  jar.set(ACCESS_COOKIE, accessToken, { ...BASE_OPTS, maxAge: EIGHT_HOURS });
 }

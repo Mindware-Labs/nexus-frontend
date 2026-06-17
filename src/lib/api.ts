@@ -1,5 +1,6 @@
 import 'server-only'
-import { getRefreshToken, getStoredAccessToken, updateStoredAccessToken } from '@/lib/session'
+import { redirect } from 'next/navigation'
+import { deleteSession, getRefreshToken, getStoredAccessToken, updateStoredAccessToken } from '@/lib/session'
 
 const BACKEND = process.env.BACKEND_URL!
 
@@ -48,7 +49,7 @@ async function refreshAccessToken(): Promise<string | null> {
   }
 }
 
-export async function getAccessToken(): Promise<string | null> {
+export async function getAccessToken(): Promise<string> {
   // Primero intentar usar el access token ya cacheado en la sesión
   const stored = await getStoredAccessToken()
   if (stored && !isTokenExpired(stored)) {
@@ -56,7 +57,12 @@ export async function getAccessToken(): Promise<string | null> {
   }
 
   // Token ausente o expirado — renovar usando el refresh token
-  return refreshAccessToken()
+  const refreshed = await refreshAccessToken()
+  if (refreshed) return refreshed
+
+  // Sin token válido ni refresh posible: sesión expirada, redirigir a login.
+  await deleteSession()
+  redirect('/login')
 }
 
 function buildHeaders(token: string, extra?: RequestInit['headers']): Record<string, string> {
@@ -70,9 +76,6 @@ function buildHeaders(token: string, extra?: RequestInit['headers']): Record<str
 // Variante para uploads multipart — no fija Content-Type (el boundary lo pone el runtime).
 export async function backendFetchFormData(path: string, body: FormData): Promise<Response> {
   const accessToken = await getAccessToken()
-  if (!accessToken) {
-    return new Response(JSON.stringify({ message: 'No autenticado' }), { status: 401 })
-  }
 
   const doFetch = (token: string) =>
     fetch(`${BACKEND}${path}`, {
@@ -85,16 +88,17 @@ export async function backendFetchFormData(path: string, body: FormData): Promis
   const res = await doFetch(accessToken)
   if (res.status !== 401) return res
 
+  // Reintento tras refresh (el backend puede rechazar el token por race condition).
   const newToken = await refreshAccessToken()
-  if (!newToken) return res
+  if (!newToken) {
+    await deleteSession()
+    redirect('/login')
+  }
   return doFetch(newToken)
 }
 
 export async function backendFetch(path: string, init?: RequestInit): Promise<Response> {
   const accessToken = await getAccessToken()
-  if (!accessToken) {
-    return new Response(JSON.stringify({ message: 'No autenticado' }), { status: 401 })
-  }
 
   const res = await fetch(`${BACKEND}${path}`, {
     ...init,
@@ -102,10 +106,13 @@ export async function backendFetch(path: string, init?: RequestInit): Promise<Re
     cache: 'no-store',
   })
 
-  // If the backend still rejects the token, attempt one refresh + retry.
+  // Si el backend rechaza el token, intentar un refresh y reintentar.
   if (res.status === 401) {
     const newToken = await refreshAccessToken()
-    if (!newToken) return res
+    if (!newToken) {
+      await deleteSession()
+      redirect('/login')
+    }
     return fetch(`${BACKEND}${path}`, {
       ...init,
       headers: buildHeaders(newToken, init?.headers),

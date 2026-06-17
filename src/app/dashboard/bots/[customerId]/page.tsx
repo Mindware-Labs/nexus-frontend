@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { AlertCircle, ArrowLeft } from 'lucide-react'
 import { getSessionUser } from '@/lib/session'
 import { getBotConfig } from '@/app/actions/bot'
+import { listAvailableModels } from '@/app/actions/api-keys'
 import { Button } from '@/components/ui/button'
 import { BotConfigForm } from './bot-config-form'
 
@@ -25,11 +26,19 @@ export default async function BotConfigPage({
   let config = null
   let loadError: string | null = null
 
-  try {
-    config = await getBotConfig(customerId)
-  } catch (err) {
+  const [configResult, modelsResult] = await Promise.allSettled([
+    getBotConfig(customerId),
+    listAvailableModels(),
+  ])
+
+  if (configResult.status === 'fulfilled') {
+    config = configResult.value
+  } else {
+    const err = configResult.reason
     loadError = err instanceof Error ? err.message : 'No se pudo cargar la configuración del bot'
   }
+
+  const availableModels = modelsResult.status === 'fulfilled' ? modelsResult.value : []
 
   return (
     <div className="flex flex-1 flex-col gap-6 p-6">
@@ -57,7 +66,7 @@ export default async function BotConfigPage({
         </div>
       )}
 
-      {config && <BotConfigForm config={config} customerId={customerId} />}
+      {config && <BotConfigForm config={config} customerId={customerId} availableModels={availableModels} />}
     </div>
   )
 }
