@@ -64,6 +64,46 @@ export async function listApiProviders(): Promise<ApiProvider[]> {
   return data.flatMap((r) => { const p = toProvider(r); return p ? [p] : [] })
 }
 
+export async function fetchModelsForExisting(
+  id: number,
+): Promise<{ models: string[] } | { error: string }> {
+  let res: Response
+  try {
+    res = await backendFetch(`/api-keys/${id}/fetch-models`, { method: 'POST' })
+  } catch {
+    return { error: 'No se pudo conectar con el servidor' }
+  }
+  if (!res.ok) {
+    const body: BackendError = await res.json().catch(() => ({}))
+    return { error: extractMessage(body, 'Error al obtener modelos') }
+  }
+  const data: unknown = await res.json().catch(() => null)
+  if (!Array.isArray(data)) return { error: 'Respuesta inválida del servidor' }
+  return { models: data as string[] }
+}
+
+export async function fetchModelsFromProvider(
+  provider: string,
+  apiKey: string,
+): Promise<{ models: string[] } | { error: string }> {
+  let res: Response
+  try {
+    res = await backendFetch('/api-keys/fetch-models', {
+      method: 'POST',
+      body: JSON.stringify({ provider, apiKey }),
+    })
+  } catch {
+    return { error: 'No se pudo conectar con el servidor' }
+  }
+  if (!res.ok) {
+    const body: BackendError = await res.json().catch(() => ({}))
+    return { error: extractMessage(body, 'Error al obtener modelos') }
+  }
+  const data: unknown = await res.json().catch(() => null)
+  if (!Array.isArray(data)) return { error: 'Respuesta inválida del servidor' }
+  return { models: data as string[] }
+}
+
 export async function listAvailableModels(): Promise<AvailableModel[]> {
   let res: Response
   try {
@@ -91,10 +131,10 @@ export async function createApiProviderAction(
     return { status: 'error', message: 'Proveedor, nombre y API key son obligatorios' }
   }
 
-  const models = modelsRaw
-    .split('\n')
-    .map((m) => m.trim())
-    .filter(Boolean)
+  const modelsJson = String(formData.get('modelsJson') ?? '').trim()
+  const models: string[] = modelsJson
+    ? (JSON.parse(modelsJson) as string[])
+    : modelsRaw.split('\n').map((m) => m.trim()).filter(Boolean)
 
   let res: Response
   try {
@@ -126,7 +166,10 @@ export async function updateApiProviderAction(
   const isActiveRaw = formData.get('isActive')
   const validate = formData.get('validate') === 'true'
 
-  const models = modelsRaw
+  const modelsJson = String(formData.get('modelsJson') ?? '').trim()
+  const models: string[] | undefined = modelsJson
+    ? (JSON.parse(modelsJson) as string[])
+    : modelsRaw
     ? modelsRaw.split('\n').map((m) => m.trim()).filter(Boolean)
     : undefined
 

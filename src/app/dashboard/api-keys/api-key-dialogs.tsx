@@ -1,10 +1,11 @@
 "use client"
 
-import { useActionState, useState } from "react"
-import { KeyRound, Loader2, Plus, Trash2, PencilLine, Eye, EyeOff, CheckCircle2 } from "lucide-react"
+import { useActionState, useState, useTransition } from "react"
+import { KeyRound, Loader2, Plus, Trash2, PencilLine, Eye, EyeOff, RefreshCw, CheckSquare, Square } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Badge } from "@/components/ui/badge"
 import {
   Dialog,
   DialogContent,
@@ -25,6 +26,8 @@ import {
   createApiProviderAction,
   updateApiProviderAction,
   deleteApiProviderAction,
+  fetchModelsFromProvider,
+  fetchModelsForExisting,
   type ApiProvider,
   type ApiKeyActionState,
 } from "@/app/actions/api-keys"
@@ -35,39 +38,165 @@ const PROVIDERS = [
   { value: "anthropic", label: "Anthropic" },
 ]
 
-const DEFAULT_MODELS: Record<string, string> = {
-  gemini: "gemini-2.0-flash-lite\ngemini-2.0-flash\ngemini-2.5-flash-preview-05-20\ngemini-2.5-pro-preview-06-05",
-  openai: "gpt-4o-mini\ngpt-4o\ngpt-4-turbo",
-  anthropic: "claude-haiku-4-5-20251001\nclaude-sonnet-4-6\nclaude-opus-4-8",
+const initialState: ApiKeyActionState = { status: "idle" }
+
+// ── Selector de modelos con fetch al proveedor ────────────────────────────────
+
+function ModelSelector({
+  provider,
+  apiKey,
+  existingId,
+  selected,
+  onChange,
+}: {
+  provider: string
+  apiKey: string
+  existingId?: number
+  selected: string[]
+  onChange: (models: string[]) => void
+}) {
+  const [available, setAvailable] = useState<string[]>([])
+  const [fetched, setFetched] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [isPending, startTransition] = useTransition()
+
+  function toggle(model: string) {
+    onChange(
+      selected.includes(model)
+        ? selected.filter((m) => m !== model)
+        : [...selected, model],
+    )
+  }
+
+  function handleFetch() {
+    // En edición: si no escribió nueva key, usa la de BD
+    const useExisting = existingId !== undefined && !apiKey.trim()
+    if (!useExisting && !apiKey.trim()) {
+      setError("Ingresa la API key primero")
+      return
+    }
+    setError(null)
+    startTransition(async () => {
+      const result = useExisting
+        ? await fetchModelsForExisting(existingId!)
+        : await fetchModelsFromProvider(provider, apiKey.trim())
+      if ("error" in result) {
+        setError(result.error)
+      } else {
+        setAvailable(result.models)
+        setFetched(true)
+        onChange(selected.filter((m) => result.models.includes(m)))
+      }
+    })
+  }
+
+  if (!fetched) {
+    return (
+      <div className="space-y-2">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={handleFetch}
+          disabled={isPending}
+          className="gap-2 w-full"
+        >
+          {isPending
+            ? <Loader2 className="size-4 animate-spin" />
+            : <RefreshCw className="size-4" />}
+          {isPending
+            ? "Consultando modelos..."
+            : existingId !== undefined && !apiKey.trim()
+            ? "Obtener modelos (key guardada)"
+            : "Obtener modelos del proveedor"}
+        </Button>
+        {error && <p className="text-xs text-destructive">{error}</p>}
+        {selected.length > 0 && (
+          <div className="flex flex-wrap gap-1">
+            {selected.map((m) => (
+              <Badge key={m} variant="secondary" className="font-mono text-xs">{m}</Badge>
+            ))}
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between">
+        <span className="text-xs text-muted-foreground">{available.length} modelos disponibles</span>
+        <button
+          type="button"
+          onClick={handleFetch}
+          disabled={isPending}
+          className="text-xs text-nexus-purple hover:underline flex items-center gap-1"
+        >
+          <RefreshCw className="size-3" />
+          Actualizar
+        </button>
+      </div>
+      <div className="max-h-48 overflow-y-auto rounded-md border divide-y">
+        {available.map((model) => {
+          const checked = selected.includes(model)
+          return (
+            <button
+              key={model}
+              type="button"
+              onClick={() => toggle(model)}
+              className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm hover:bg-muted/50 transition-colors"
+            >
+              {checked
+                ? <CheckSquare className="size-4 shrink-0 text-nexus-purple" />
+                : <Square className="size-4 shrink-0 text-muted-foreground/50" />}
+              <span className="font-mono text-xs">{model}</span>
+            </button>
+          )
+        })}
+      </div>
+      {error && <p className="text-xs text-destructive">{error}</p>}
+      {selected.length === 0 && (
+        <p className="text-xs text-amber-600">Selecciona al menos un modelo</p>
+      )}
+    </div>
+  )
 }
 
-// ── Crear proveedor ──────────────────────────────────────────────────────────
-
-const initialState: ApiKeyActionState = { status: "idle" }
+// ── Crear proveedor ───────────────────────────────────────────────────────────
 
 export function AddApiProviderDialog() {
   const [open, setOpen] = useState(false)
   const [showKey, setShowKey] = useState(false)
   const [selectedProvider, setSelectedProvider] = useState("gemini")
-  const [models, setModels] = useState(DEFAULT_MODELS.gemini)
+  const [apiKey, setApiKey] = useState("")
+  const [selectedModels, setSelectedModels] = useState<string[]>([])
 
-  const boundAction = createApiProviderAction.bind(null, initialState)
   const [state, formAction, pending] = useActionState(
     async (_prev: ApiKeyActionState, formData: FormData) => {
+      formData.set("modelsJson", JSON.stringify(selectedModels))
       const result = await createApiProviderAction(_prev, formData)
-      if (result.status === "success") setOpen(false)
+      if (result.status === "success") {
+        setOpen(false)
+        setApiKey("")
+        setSelectedModels([])
+      }
       return result
     },
     initialState,
   )
 
+  function handleOpenChange(v: boolean) {
+    setOpen(v)
+    if (!v) { setApiKey(""); setSelectedModels([]) }
+  }
+
   function handleProviderChange(val: string) {
     setSelectedProvider(val)
-    setModels(DEFAULT_MODELS[val] ?? "")
+    setSelectedModels([])
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button size="sm" className="gap-2 bg-nexus-purple hover:bg-nexus-purple/90 text-white">
           <Plus className="size-4" />
@@ -120,6 +249,8 @@ export function AddApiProviderDialog() {
                 type={showKey ? "text" : "password"}
                 placeholder="Pega tu API key aquí"
                 required
+                value={apiKey}
+                onChange={(e) => { setApiKey(e.target.value); setSelectedModels([]) }}
                 className="pr-10 font-mono text-xs"
               />
               <button
@@ -133,28 +264,13 @@ export function AddApiProviderDialog() {
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="models">Modelos disponibles <span className="text-muted-foreground text-xs">(uno por línea)</span></Label>
-            <textarea
-              id="models"
-              name="models"
-              value={models}
-              onChange={(e) => setModels(e.target.value)}
-              rows={4}
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-mono resize-y"
-              placeholder="gemini-2.0-flash-lite"
+            <Label>Modelos disponibles</Label>
+            <ModelSelector
+              provider={selectedProvider}
+              apiKey={apiKey}
+              selected={selectedModels}
+              onChange={setSelectedModels}
             />
-          </div>
-
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <input
-              type="checkbox"
-              id="validate"
-              name="validate"
-              value="true"
-              defaultChecked
-              className="rounded"
-            />
-            <label htmlFor="validate">Validar key antes de guardar</label>
           </div>
 
           {state.status === "error" && (
@@ -165,7 +281,11 @@ export function AddApiProviderDialog() {
             <DialogClose asChild>
               <Button type="button" variant="outline">Cancelar</Button>
             </DialogClose>
-            <Button type="submit" disabled={pending} className="gap-2 bg-nexus-purple hover:bg-nexus-purple/90 text-white">
+            <Button
+              type="submit"
+              disabled={pending || selectedModels.length === 0}
+              className="gap-2 bg-nexus-purple hover:bg-nexus-purple/90 text-white"
+            >
               {pending && <Loader2 className="size-4 animate-spin" />}
               Guardar
             </Button>
@@ -176,15 +296,17 @@ export function AddApiProviderDialog() {
   )
 }
 
-// ── Editar proveedor ─────────────────────────────────────────────────────────
+// ── Editar proveedor ──────────────────────────────────────────────────────────
 
 export function EditApiProviderDialog({ provider }: { provider: ApiProvider }) {
   const [open, setOpen] = useState(false)
   const [showKey, setShowKey] = useState(false)
-  const [models, setModels] = useState(provider.models.join("\n"))
+  const [apiKey, setApiKey] = useState("")
+  const [selectedModels, setSelectedModels] = useState<string[]>(provider.models)
 
   const [state, formAction, pending] = useActionState(
     async (_prev: ApiKeyActionState, formData: FormData) => {
+      formData.set("modelsJson", JSON.stringify(selectedModels))
       const result = await updateApiProviderAction(provider.id, _prev, formData)
       if (result.status === "success") setOpen(false)
       return result
@@ -192,8 +314,13 @@ export function EditApiProviderDialog({ provider }: { provider: ApiProvider }) {
     initialState,
   )
 
+  function handleOpenChange(v: boolean) {
+    setOpen(v)
+    if (!v) { setApiKey(""); setSelectedModels(provider.models) }
+  }
+
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button variant="ghost" size="sm" className="gap-1.5 h-8">
           <PencilLine className="size-3.5" />
@@ -230,6 +357,8 @@ export function EditApiProviderDialog({ provider }: { provider: ApiProvider }) {
                 name="apiKey"
                 type={showKey ? "text" : "password"}
                 placeholder="••••••••••••••••"
+                value={apiKey}
+                onChange={(e) => setApiKey(e.target.value)}
                 className="pr-10 font-mono text-xs"
               />
               <button
@@ -243,16 +372,13 @@ export function EditApiProviderDialog({ provider }: { provider: ApiProvider }) {
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor={`models-${provider.id}`}>
-              Modelos disponibles <span className="text-muted-foreground text-xs">(uno por línea)</span>
-            </Label>
-            <textarea
-              id={`models-${provider.id}`}
-              name="models"
-              value={models}
-              onChange={(e) => setModels(e.target.value)}
-              rows={4}
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-mono resize-y"
+            <Label>Modelos disponibles</Label>
+            <ModelSelector
+              provider={provider.provider}
+              apiKey={apiKey}
+              existingId={provider.id}
+              selected={selectedModels}
+              onChange={setSelectedModels}
             />
           </div>
 
@@ -268,17 +394,6 @@ export function EditApiProviderDialog({ provider }: { provider: ApiProvider }) {
             <label htmlFor={`active-${provider.id}`} className="text-sm">Proveedor activo</label>
           </div>
 
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <input
-              type="checkbox"
-              id={`validate-${provider.id}`}
-              name="validate"
-              value="true"
-              className="rounded"
-            />
-            <label htmlFor={`validate-${provider.id}`}>Validar key si se cambia</label>
-          </div>
-
           {state.status === "error" && (
             <p className="text-sm text-destructive">{state.message}</p>
           )}
@@ -287,7 +402,11 @@ export function EditApiProviderDialog({ provider }: { provider: ApiProvider }) {
             <DialogClose asChild>
               <Button type="button" variant="outline">Cancelar</Button>
             </DialogClose>
-            <Button type="submit" disabled={pending} className="gap-2 bg-nexus-purple hover:bg-nexus-purple/90 text-white">
+            <Button
+              type="submit"
+              disabled={pending || selectedModels.length === 0}
+              className="gap-2 bg-nexus-purple hover:bg-nexus-purple/90 text-white"
+            >
               {pending && <Loader2 className="size-4 animate-spin" />}
               Guardar cambios
             </Button>
@@ -298,7 +417,7 @@ export function EditApiProviderDialog({ provider }: { provider: ApiProvider }) {
   )
 }
 
-// ── Eliminar proveedor ───────────────────────────────────────────────────────
+// ── Eliminar proveedor ────────────────────────────────────────────────────────
 
 export function DeleteApiProviderButton({ provider }: { provider: ApiProvider }) {
   const [open, setOpen] = useState(false)
