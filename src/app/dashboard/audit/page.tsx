@@ -73,12 +73,14 @@ const ACTION_LABELS: Record<string, string> = {
   "bot_config.update": "Config bot editada",
   "bot_config.activate": "Bot activado",
   "bot_config.deactivate": "Bot desactivado",
+  "privacy_settings.update": "Política de privacidad editada",
 }
 
 const ENTITY_LABELS: Record<string, string> = {
   customer: "Cliente",
   tenant: "Empresa",
   bot_config: "Config Bot",
+  privacy_settings: "Privacidad",
 }
 
 const ACTION_BADGE_VARIANT: Record<string, "default" | "success" | "info" | "warning" | "destructive"> = {
@@ -89,6 +91,7 @@ const ACTION_BADGE_VARIANT: Record<string, "default" | "success" | "info" | "war
   "bot_config.update": "warning",
   "bot_config.activate": "success",
   "bot_config.deactivate": "destructive",
+  "privacy_settings.update": "info",
 }
 
 function ErrorBanner({ message }: { message: string }) {
@@ -117,6 +120,11 @@ const FIELD_LABELS: Record<string, string> = {
   website_url: "URL del sitio web",
   logo_url: "Logo",
   sector: "Sector",
+  consentText: "Texto de consentimiento",
+  privacyPolicyUrl: "URL política de privacidad",
+  policyText: "Texto completo de la política",
+  retentionMonthsConversations: "Retención conversaciones (meses)",
+  retentionMonthsLeads: "Retención leads (meses)",
 }
 
 const PLAN_MAP: Record<string, string> = {

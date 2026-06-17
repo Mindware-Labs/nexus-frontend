@@ -198,11 +198,13 @@ interface AvatarPickerProps {
   mode: 'icon' | 'emoji' | 'image'
   value: string
   primaryColor: string
-  customerId: number
+  customerId?: number
+  /** Override the API route used for uploads. Defaults to `/api/bot/${customerId}/avatar`. */
+  avatarUploadPath?: string
   onChange: (mode: 'icon' | 'emoji' | 'image', value: string) => void
 }
 
-export function AvatarPickerField({ mode, value, primaryColor, customerId, onChange }: AvatarPickerProps) {
+export function AvatarPickerField({ mode, value, primaryColor, customerId, avatarUploadPath, onChange }: AvatarPickerProps) {
   const fileRef = useRef<HTMLInputElement>(null)
   const [uploading, setUploading] = useState(false)
   const [uploadError, setUploadError] = useState('')
@@ -231,7 +233,8 @@ export function AvatarPickerField({ mode, value, primaryColor, customerId, onCha
     try {
       const form = new FormData()
       form.append('file', file)
-      const res = await fetch(`/api/bot/${customerId}/avatar`, { method: 'POST', body: form })
+      const uploadPath = avatarUploadPath ?? `/api/bot/${customerId}/avatar`
+      const res = await fetch(uploadPath, { method: 'POST', body: form })
       const data = await res.json() as { avatarUrl?: string; message?: string }
       if (!res.ok) throw new Error(data.message ?? 'Error al subir')
       onChange('image', data.avatarUrl!)

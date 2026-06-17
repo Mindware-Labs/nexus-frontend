@@ -125,7 +125,9 @@ export interface CustomerBotConfig {
   assistantName: string
   avatarMode: 'icon' | 'emoji' | 'image'
   avatarValue: string
-  tone: string
+  supportedLanguages: string[]
+  tone: 'formal' | 'tecnico' | 'amigable' | 'consultivo' | 'directo'
+  llmProvider: string
   llmModel: string
   temperature: number
   maxTokens: number
@@ -134,14 +136,16 @@ export interface CustomerBotConfig {
   businessRules: Array<Record<string, unknown>>
   pricingRules: Array<Record<string, unknown>>
   diagnosticQuestions: Array<Record<string, unknown>>
-  leadCaptureMoment: string
+  leadCaptureMoment: 'early' | 'after_interest' | 'after_diagnostics' | 'before_closing'
   contactFields: Array<{ key: string; label: string; enabled: boolean; required: boolean }>
   notificationEmails: string[]
   closingMessage: string
   welcomeMessage: string
+  fallbackMessage: string
   widgetPrimaryColor: string
   widgetPosition: 'left' | 'right'
   launcherText: string
+  websiteUrl: string
   snippet: string
   widgetUrl: string
   isBotActive: boolean
@@ -153,6 +157,7 @@ export interface CustomerBotConfig {
   tenantSector: string
   tenantLogoUrl: string
   scoringThreshold: number
+  scoringRubric: Array<{ criterion: string; maxScore: number; description: string }>
 }
 
 export type Period = '7d' | '30d' | 'month' | '3m' | 'all'
@@ -422,6 +427,35 @@ export async function getUnansweredQuestions(days = 30): Promise<UnansweredQuest
   if (res.status === 401) redirect('/login')
   if (!res.ok) throw new Error('Error al cargar las preguntas')
   return res.json()
+}
+
+// ── Chatbot completo (CUS-08 expandido) ─────────────────────────────────────
+// Misma forma que updateBotConfigAction pero sin campos de IA (llmProvider/llmModel/temperature/maxTokens).
+// Retorna BotActionState para compatibilidad con BotConfigForm.
+export type BotActionState =
+  | { status: 'idle' }
+  | { status: 'error'; message: string }
+  | { status: 'success' }
+
+export async function saveCustomerBotConfigAction(
+  payload: Record<string, unknown>,
+): Promise<BotActionState> {
+  let res: Response
+  try {
+    res = await backendFetch('/customer/bot/presentation', {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    })
+  } catch {
+    return { status: 'error', message: 'No se pudo conectar con el servidor' }
+  }
+  if (res.status === 401) redirect('/login')
+  if (!res.ok) {
+    const body: BackendError = await res.json().catch(() => ({}))
+    return { status: 'error', message: extractMessage(body, 'No se pudo guardar la configuración') }
+  }
+  revalidatePath('/panel/chatbot')
+  return { status: 'success' }
 }
 
 export async function changePasswordAction(

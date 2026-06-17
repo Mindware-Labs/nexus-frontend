@@ -14,6 +14,7 @@ import {
   updateBotConfigAction,
   type BotConfig,
 } from '@/app/actions/bot'
+import { saveCustomerBotConfigAction } from '@/app/actions/customer'
 import type { AvailableModel } from '@/app/actions/api-keys'
 
 import type { ProductItem, RuleItem, PricingItem, QuestionItem, ContactField, ScoringCriterion } from './_shared'
@@ -28,10 +29,13 @@ export function BotConfigForm({
   config,
   customerId,
   availableModels = [],
+  mode = 'owner',
 }: {
   config: BotConfig
   customerId: number
   availableModels?: AvailableModel[]
+  /** 'customer' hides IA model fields and uses customer-scoped actions */
+  mode?: 'owner' | 'customer'
 }) {
   const [isPending, startTransition] = useTransition()
   const [saveStatus, setSaveStatus] = useState<'idle' | 'success' | 'error'>('idle')
@@ -88,15 +92,17 @@ export function BotConfigForm({
   // ── Handlers ────────────────────────────────────────────────────────────────
   function doSave() {
     startTransition(async () => {
-      const result = await updateBotConfigAction(customerId, {
+      const sharedPayload = {
         assistantName, avatarMode, avatarValue, supportedLanguages, tone,
-        llmProvider, llmModel, temperature, maxTokens, systemPromptHtml,
-        productsServices, businessRules, pricingRules, diagnosticQuestions,
-        leadCaptureMoment, contactFields, notificationEmails, closingMessage,
-        widgetPrimaryColor: widgetPrimaryColor.toUpperCase(), widgetPosition,
-        launcherText, welcomeMessage, fallbackMessage, websiteUrl,
+        systemPromptHtml, productsServices, businessRules, pricingRules,
+        diagnosticQuestions, leadCaptureMoment, contactFields, notificationEmails,
+        closingMessage, widgetPrimaryColor: widgetPrimaryColor.toUpperCase(),
+        widgetPosition, launcherText, welcomeMessage, fallbackMessage, websiteUrl,
         scoringThreshold, scoringRubric,
-      })
+      }
+      const result = mode === 'customer'
+        ? await saveCustomerBotConfigAction(sharedPayload)
+        : await updateBotConfigAction(customerId, { ...sharedPayload, llmProvider, llmModel, temperature, maxTokens })
       setSaveStatus(result.status === 'success' ? 'success' : 'error')
       setSaveMsg(result.status === 'error' ? result.message : '')
       if (result.status === 'success') setTimeout(() => setSaveStatus('idle'), 3000)
@@ -164,15 +170,17 @@ export function BotConfigForm({
         </div>
         <div className="flex items-center gap-2">
           <PreviewDialog customerId={customerId} />
-          <Button
-            type="button" variant="outline" size="sm"
-            disabled={isToggling} onClick={handleToggle}
-            className={isBotActive ? 'text-destructive hover:text-destructive' : ''}
-          >
-            {isBotActive
-              ? <><PowerOff className="mr-1.5 size-3.5" />Desactivar (BOT-26)</>
-              : <><Power className="mr-1.5 size-3.5" />Activar (BOT-26)</>}
-          </Button>
+          {mode === 'owner' && (
+            <Button
+              type="button" variant="outline" size="sm"
+              disabled={isToggling} onClick={handleToggle}
+              className={isBotActive ? 'text-destructive hover:text-destructive' : ''}
+            >
+              {isBotActive
+                ? <><PowerOff className="mr-1.5 size-3.5" />Desactivar (BOT-26)</>
+                : <><Power className="mr-1.5 size-3.5" />Activar (BOT-26)</>}
+            </Button>
+          )}
           <Button
             type="button" disabled={isPending || !rubricValid} onClick={handleSave}
             title={!rubricValid ? `La rúbrica suma ${rubricTotal} pts — debe ser exactamente 100` : undefined}
@@ -218,6 +226,7 @@ export function BotConfigForm({
             value={avatarValue}
             primaryColor={widgetPrimaryColor}
             customerId={customerId}
+            avatarUploadPath={mode === 'customer' ? '/api/customer/avatar' : undefined}
             onChange={(m, v) => { setAvatarMode(m); setAvatarValue(v) }}
           />
         </Field>
@@ -228,7 +237,7 @@ export function BotConfigForm({
       </Section>
 
       {/* BOT-03/04/06/07/09: Modelo */}
-      <Section id="modelo" title="Comportamiento del modelo" hint="BOT-08: Las API keys son gestionadas centralmente por Owners y nunca se exponen al cliente.">
+      <Section id="modelo" title="Comportamiento del modelo" hint={mode === 'owner' ? "BOT-08: Las API keys son gestionadas centralmente por Owners y nunca se exponen al cliente." : undefined}>
         <Field label="BOT-03 · Idiomas soportados" hint="Selecciona uno o más idiomas en los que el asistente responderá.">
           <div className="flex flex-wrap gap-2">
             {SUPPORTED_LANGUAGES.map((lang) => {
@@ -271,7 +280,7 @@ export function BotConfigForm({
           </Select>
         </Field>
 
-        {availableModels.length > 0 ? (() => {
+        {mode !== 'customer' && availableModels.length > 0 ? (() => {
           const selectedProvider = availableModels.find((p) => p.provider === llmProvider) ?? availableModels[0]
           const providerModels = selectedProvider?.models ?? []
           return (
@@ -331,24 +340,26 @@ export function BotConfigForm({
           </div>
         )}
 
-        <div className="grid grid-cols-2 gap-4">
-          <Field label="BOT-06 · Temperatura / creatividad" hint={`Valor actual: ${temperature}`}>
-            <Select value={String(temperature)} onValueChange={(v) => setTemperature(Number(v))}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {TEMPERATURE_OPTIONS.map((opt) => (
-                  <SelectItem key={opt.value} value={String(opt.value)}>
-                    <span className="font-medium">{opt.label}</span>
-                    <span className="ml-2 text-xs text-muted-foreground">{opt.description}</span>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </Field>
-          <Field label="BOT-07 · Máximo de tokens por respuesta">
-            <Input type="number" min={64} step={64} value={maxTokens} onChange={(e) => setMaxTokens(Number(e.target.value))} />
-          </Field>
-        </div>
+        {mode !== 'customer' && (
+          <div className="grid grid-cols-2 gap-4">
+            <Field label="BOT-06 · Temperatura / creatividad" hint={`Valor actual: ${temperature}`}>
+              <Select value={String(temperature)} onValueChange={(v) => setTemperature(Number(v))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {TEMPERATURE_OPTIONS.map((opt) => (
+                    <SelectItem key={opt.value} value={String(opt.value)}>
+                      <span className="font-medium">{opt.label}</span>
+                      <span className="ml-2 text-xs text-muted-foreground">{opt.description}</span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </Field>
+            <Field label="BOT-07 · Máximo de tokens por respuesta">
+              <Input type="number" min={64} step={64} value={maxTokens} onChange={(e) => setMaxTokens(Number(e.target.value))} />
+            </Field>
+          </div>
+        )}
 
         <Field label="BOT-09 · System prompt del chatbot">
           <textarea
@@ -592,32 +603,36 @@ export function BotConfigForm({
           <Input type="url" value={websiteUrl} onChange={(e) => setWebsiteUrl(e.target.value)} maxLength={500} placeholder="https://sitio-del-cliente.com" />
         </Field>
 
-        <div className="flex items-center gap-3 rounded-lg bg-muted/40 px-3 py-2.5">
-          <Bot className="size-4 shrink-0 text-muted-foreground" />
-          <div className="min-w-0 flex-1">
-            <p className="text-xs text-muted-foreground">BOT-23 · Client ID único</p>
-            <p className="font-mono text-sm text-foreground">{config.clientId}</p>
-          </div>
-        </div>
+        {mode === 'owner' && (
+          <>
+            <div className="flex items-center gap-3 rounded-lg bg-muted/40 px-3 py-2.5">
+              <Bot className="size-4 shrink-0 text-muted-foreground" />
+              <div className="min-w-0 flex-1">
+                <p className="text-xs text-muted-foreground">BOT-23 · Client ID único</p>
+                <p className="font-mono text-sm text-foreground">{config.clientId}</p>
+              </div>
+            </div>
 
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <p className="text-xs text-muted-foreground">BOT-19 · Snippet HTML/JS para incrustar en el sitio del cliente</p>
-            <Button type="button" variant="outline" size="sm" onClick={copySnippet}>
-              {copied
-                ? <><CheckCircle2 className="mr-1.5 size-3.5 text-green-500" />Copiado</>
-                : <><Copy className="mr-1.5 size-3.5" />Copiar</>}
-            </Button>
-          </div>
-          <pre className="overflow-x-auto rounded-lg bg-muted p-4 text-xs leading-relaxed">
-            <code>{config.snippet}</code>
-          </pre>
-          <p className="text-xs text-muted-foreground">
-            Pega este código antes del cierre de{' '}
-            <code className="rounded bg-muted px-1 font-mono">&lt;/body&gt;</code>{' '}
-            en el sitio web del cliente.
-          </p>
-        </div>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <p className="text-xs text-muted-foreground">BOT-19 · Snippet HTML/JS para incrustar en el sitio del cliente</p>
+                <Button type="button" variant="outline" size="sm" onClick={copySnippet}>
+                  {copied
+                    ? <><CheckCircle2 className="mr-1.5 size-3.5 text-green-500" />Copiado</>
+                    : <><Copy className="mr-1.5 size-3.5" />Copiar</>}
+                </Button>
+              </div>
+              <pre className="overflow-x-auto rounded-lg bg-muted p-4 text-xs leading-relaxed">
+                <code>{config.snippet}</code>
+              </pre>
+              <p className="text-xs text-muted-foreground">
+                Pega este código antes del cierre de{' '}
+                <code className="rounded bg-muted px-1 font-mono">&lt;/body&gt;</code>{' '}
+                en el sitio web del cliente.
+              </p>
+            </div>
+          </>
+        )}
       </Section>
 
       {/* Footer save */}

@@ -6,9 +6,9 @@ import {
   Building2,
   HelpCircle,
   LayoutDashboard,
-  LogOut,
   MessageSquare,
   MessagesSquare,
+  Shield,
   Sparkles,
   Users,
 } from "lucide-react"
@@ -28,7 +28,7 @@ import {
   SidebarMenuItem,
   SidebarRail,
 } from "@/components/ui/sidebar"
-import { logoutAction } from "@/app/actions/auth"
+import { LogoutButton } from "@/components/logout-button"
 
 const navItems = [
   {
@@ -55,6 +55,7 @@ const navItems = [
     items: [
       { title: "Notificaciones", url: "/panel/settings", icon: Bell },
       { title: "Mi Empresa", url: "/panel/company", icon: Building2 },
+      { title: "Privacidad", url: "/panel/privacy", icon: Shield },
     ],
   },
 ]
@@ -126,15 +127,7 @@ export function PanelSidebar({ userName, userEmail }: { userName: string; userEm
           </SidebarMenuItem>
           <SidebarMenuItem>
             <SidebarMenuButton asChild tooltip="Cerrar sesión">
-              <form action={logoutAction}>
-                <button
-                  type="submit"
-                  className="flex w-full items-center gap-2 text-muted-foreground hover:text-destructive transition-colors"
-                >
-                  <LogOut className="size-4" />
-                  <span>Cerrar sesión</span>
-                </button>
-              </form>
+              <LogoutButton />
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
