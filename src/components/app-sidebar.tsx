@@ -22,7 +22,6 @@ import {
   SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
-  SidebarMenuBadge,
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarRail,
@@ -99,11 +98,6 @@ export function AppSidebar({ userName, userEmail }: { userName: string; userEmai
                         <span>{item.title}</span>
                       </Link>
                     </SidebarMenuButton>
-                    {item.badge && (
-                      <SidebarMenuBadge className="text-[10px] bg-nexus-lavender/15 text-nexus-purple border-nexus-lavender/30 border rounded-full px-1.5">
-                        {item.badge}
-                      </SidebarMenuBadge>
-                    )}
                   </SidebarMenuItem>
                 ))}
               </SidebarMenu>
