@@ -2,27 +2,30 @@ import { Suspense } from 'react'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import {
-  ArrowLeft,
   AlertCircle,
-  MessageSquare,
-  Users,
-  Zap,
+  ArrowLeft,
+  ArrowUpDown,
+  BarChart2,
+  Bot,
+  Building2,
   Clock,
   DollarSign,
-  TrendingUp,
-  Bot,
-  RefreshCw,
-  Mail,
-  Phone,
-  Building2,
-  User,
-  Star,
-  ArrowUpDown,
   Filter,
+  HelpCircle,
   Lightbulb,
+  Mail,
+  MessageSquare,
+  Phone,
+  RefreshCw,
+  Star,
+  TrendingUp,
+  User,
+  Users,
+  Zap,
 } from 'lucide-react'
 import { getSessionUser } from '@/lib/session'
 import { getCustomerReports, type Period, type CustomerReports } from '@/app/actions/reports'
+import { getCustomerUnansweredQuestions, type UnansweredQuestion } from '@/app/actions/customers'
 import { PeriodSelector } from '@/components/reports/period-selector'
 import { LeadFilters } from '@/components/reports/lead-filters'
 import { CsvExportButton } from '@/components/reports/csv-export-button'
@@ -365,11 +368,22 @@ export default async function CustomerReportsPage({
 
   let reports: CustomerReports | null = null
   let loadError: string | null = null
+  let unanswered: UnansweredQuestion[] = []
 
-  try {
-    reports = await getCustomerReports(customerId, period)
-  } catch (err) {
-    loadError = err instanceof Error ? err.message : 'No se pudo cargar el reporte'
+  const [reportsResult, unansweredResult] = await Promise.allSettled([
+    getCustomerReports(customerId, period),
+    getCustomerUnansweredQuestions(customerId, 30),
+  ])
+
+  if (reportsResult.status === 'fulfilled') {
+    reports = reportsResult.value
+  } else {
+    loadError = reportsResult.reason instanceof Error
+      ? reportsResult.reason.message
+      : 'No se pudo cargar el reporte'
+  }
+  if (unansweredResult.status === 'fulfilled') {
+    unanswered = unansweredResult.value
   }
 
   const periodLabels: Record<Period, string> = {
@@ -447,6 +461,54 @@ export default async function CustomerReportsPage({
       )}
 
       {reports && <ReportsContent reports={reports} period={period} sortLeads={sortLeads} filterClass={filterClass} />}
+
+      {/* KB-05: Preguntas sin respuesta */}
+      <div className="space-y-3">
+        <div className="flex items-center gap-2">
+          <HelpCircle className="size-4 text-muted-foreground" />
+          <h2 className="text-base font-semibold text-foreground">Preguntas sin respuesta</h2>
+          <span className="ml-auto text-xs text-muted-foreground">Últimos 30 días</span>
+        </div>
+
+        {unanswered.length === 0 ? (
+          <div className="flex items-center gap-3 rounded-xl border bg-muted/20 px-4 py-3">
+            <BarChart2 className="size-4 shrink-0 text-green-600 dark:text-green-400" />
+            <p className="text-sm text-muted-foreground">
+              El bot respondió todo correctamente en los últimos 30 días.
+            </p>
+          </div>
+        ) : (
+          <div className="rounded-xl border bg-card">
+            <Table>
+              <TableHeader>
+                <TableRow className="hover:bg-transparent">
+                  <TableHead>Pregunta</TableHead>
+                  <TableHead className="w-24 text-center">Veces</TableHead>
+                  <TableHead className="w-44">Última vez</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {unanswered.map((q, i) => (
+                  <TableRow key={i}>
+                    <TableCell className="text-sm text-foreground">{q.question}</TableCell>
+                    <TableCell className="text-center">
+                      <Badge
+                        variant={q.frequency >= 5 ? 'destructive' : q.frequency >= 2 ? 'warning' : 'outline'}
+                        className="tabular-nums"
+                      >
+                        {q.frequency}×
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-xs text-muted-foreground">
+                      {fmtDate(q.last_asked_at)}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+      </div>
     </div>
   )
 }

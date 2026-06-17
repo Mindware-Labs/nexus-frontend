@@ -405,6 +405,25 @@ export async function uploadLogoAction(formData: FormData): Promise<{ avatarUrl:
 }
 
 // ── Cuenta (CUS-32) ────────────────────────────────────────────────────────
+// ── KB-05: preguntas sin respuesta ───────────────────────────────────────
+export interface UnansweredQuestion {
+  question: string
+  frequency: number
+  last_asked_at: string
+}
+
+export async function getUnansweredQuestions(days = 30): Promise<UnansweredQuestion[]> {
+  let res: Response
+  try {
+    res = await backendFetch(`/customer/unanswered-questions?days=${days}`)
+  } catch {
+    throw new Error('No se pudo conectar con el servidor')
+  }
+  if (res.status === 401) redirect('/login')
+  if (!res.ok) throw new Error('Error al cargar las preguntas')
+  return res.json()
+}
+
 export async function changePasswordAction(
   _prev: { error?: string; success?: boolean } | null,
   formData: FormData,

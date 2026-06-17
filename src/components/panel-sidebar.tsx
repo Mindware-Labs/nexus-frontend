@@ -1,15 +1,16 @@
 "use client"
 
 import {
+  BarChart2,
   Bell,
   Building2,
+  HelpCircle,
   LayoutDashboard,
   LogOut,
   MessageSquare,
   MessagesSquare,
   Sparkles,
   Users,
-  BarChart2,
 } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
@@ -44,7 +45,10 @@ const navItems = [
   },
   {
     group: "Analítica",
-    items: [{ title: "Analítica", url: "/panel/analytics", icon: BarChart2 }],
+    items: [
+      { title: "Analítica", url: "/panel/analytics", icon: BarChart2 },
+      { title: "Sin respuesta", url: "/panel/unanswered", icon: HelpCircle },
+    ],
   },
   {
     group: "Cuenta",

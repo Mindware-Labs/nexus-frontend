@@ -40,7 +40,7 @@ const navItems = [
     group: "Gestión",
     items: [
       { title: "Clientes", url: "/dashboard/customers", icon: Users },
-      { title: "Tenants", url: "/dashboard/tenants", icon: Building2, badge: "Próximo" },
+      { title: "Tenants", url: "/dashboard/tenants", icon: Building2 },
     ],
   },
   {

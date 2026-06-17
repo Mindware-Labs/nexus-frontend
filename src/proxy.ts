@@ -1,85 +1,123 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-const TOKEN_COOKIE = 'nx_token';
-const USER_COOKIE = 'nx_user';
 const BACKEND = process.env.BACKEND_URL ?? process.env.NEXT_PUBLIC_BACKEND_URL;
 
-type PartialUser = { role: string };
-
-function parseUserCookie(value: string | undefined): PartialUser | null {
-  if (!value) return null;
-  try {
-    return JSON.parse(Buffer.from(value, 'base64').toString('utf-8')) as PartialUser;
-  } catch {
-    return null;
-  }
-}
-
-async function handleWidgetRoute(request: NextRequest, clientId: string) {
-  if (!BACKEND) {
-    const res = NextResponse.next();
-    res.headers.set('Content-Security-Policy', "frame-ancestors 'none'");
-    return res;
-  }
-
-  try {
-    const backendRes = await fetch(
-      `${BACKEND}/bot/widget/${clientId}/config`,
-      { cache: 'no-store' },
-    );
-
-    const response = NextResponse.next();
-
-    if (backendRes.ok) {
-      const config = await backendRes.json();
-      const websiteUrl = (config.websiteUrl as string | undefined)?.trim();
-      const frameAncestors = websiteUrl ? `'self' ${websiteUrl}` : "'none'";
-      response.headers.set('Content-Security-Policy', `frame-ancestors ${frameAncestors}`);
-    } else {
-      response.headers.set('Content-Security-Policy', "frame-ancestors 'none'");
-    }
-
-    return response;
-  } catch {
-    // Error de red: dejar pasar sin bloquear para no romper el widget.
-    return NextResponse.next();
-  }
-}
+const AUTH_PAGES = ['/login', '/forgot-password', '/reset-password'];
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  // ── Widget: validar CSP frame-ancestors contra config del backend ──────
   const widgetMatch = pathname.match(/^\/widget\/([^/]+)$/);
   if (widgetMatch) {
-    return handleWidgetRoute(request, widgetMatch[1]);
+    const res = NextResponse.next();
+    if (!BACKEND) {
+      res.headers.set('Content-Security-Policy', "frame-ancestors 'none'");
+      return res;
+    }
+    try {
+      const backendRes = await fetch(
+        `${BACKEND}/bot/widget/${widgetMatch[1]}/config`,
+        { cache: 'no-store' },
+      );
+      if (backendRes.ok) {
+        const cfg = await backendRes.json();
+        const origin = (cfg.websiteUrl as string | undefined)?.trim();
+        res.headers.set(
+          'Content-Security-Policy',
+          `frame-ancestors ${origin ? `'self' ${origin}` : "'none'"}`,
+        );
+      } else {
+        res.headers.set('Content-Security-Policy', "frame-ancestors 'none'");
+      }
+    } catch {
+      // Error de red: no bloquear el widget.
+    }
+    return res;
   }
 
-  const isAuthenticated = !!request.cookies.get(TOKEN_COOKIE)?.value;
-  const user = parseUserCookie(request.cookies.get(USER_COOKIE)?.value);
-  const role = user?.role ?? null;
+  // ── Leer y decodificar tokens ─────────────────────────────────────────
+  const refreshToken = request.cookies.get('nx_token')?.value ?? null;
+  const accessToken  = request.cookies.get('nx_access')?.value ?? null;
 
-  const isOwnerRoute = pathname.startsWith('/dashboard');
-  const isCustomerRoute = pathname.startsWith('/panel');
-  const isLoginRoute = pathname === '/login';
+  let role: string | null = null;
+  let sessionExpired = false;
 
-  /* Redirect unauthenticated users to login */
-  if (!isAuthenticated && (isOwnerRoute || isCustomerRoute)) {
+  if (refreshToken) {
+    try {
+      const payloadPart = refreshToken.split('.')[1];
+      if (payloadPart) {
+        const base64 = payloadPart.replace(/-/g, '+').replace(/_/g, '/');
+        const padded  = base64 + '='.repeat((4 - (base64.length % 4)) % 4);
+        const payload = JSON.parse(atob(padded)) as { exp?: number };
+        if (payload.exp && Date.now() >= payload.exp * 1000) {
+          sessionExpired = true;
+        }
+      }
+    } catch {
+      sessionExpired = true;
+    }
+  }
+
+  // El role viaja en el access token (sub, email, role, tenantId, type:"access")
+  if (accessToken && !sessionExpired) {
+    try {
+      const payloadPart = accessToken.split('.')[1];
+      if (payloadPart) {
+        const base64 = payloadPart.replace(/-/g, '+').replace(/_/g, '/');
+        const padded  = base64 + '='.repeat((4 - (base64.length % 4)) % 4);
+        const payload = JSON.parse(atob(padded)) as { role?: string };
+        role = payload.role ?? null;
+      }
+    } catch {
+      role = null;
+    }
+  }
+
+  // Si el access token expiró pero el refresh no, leer el role desde nx_user
+  // (el refresh token no lleva role en el payload)
+  if (!role && refreshToken && !sessionExpired) {
+    try {
+      const raw = request.cookies.get('nx_user')?.value;
+      if (raw) {
+        const user = JSON.parse(atob(raw)) as { role?: string };
+        role = user.role ?? null;
+      }
+    } catch {
+      role = null;
+    }
+  }
+
+  const isAuthenticated = !!refreshToken && !sessionExpired;
+
+  // ── Sesión expirada fuera de páginas públicas: limpiar y redirigir ────
+  if (sessionExpired && !AUTH_PAGES.includes(pathname)) {
+    const loginUrl = new URL('/login', request.url);
+    const res = NextResponse.redirect(loginUrl);
+    res.cookies.delete('nx_token');
+    res.cookies.delete('nx_user');
+    res.cookies.delete('nx_access');
+    return res;
+  }
+
+  // ── Rutas protegidas sin sesión ───────────────────────────────────────
+  if (!isAuthenticated && (pathname.startsWith('/dashboard') || pathname.startsWith('/panel'))) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
-  /* Redirect authenticated users away from login */
-  if (isAuthenticated && isLoginRoute) {
-    const dest = role === 'owner' ? '/dashboard' : '/panel';
+  // ── Con sesión válida fuera de páginas auth ───────────────────────────
+  if (isAuthenticated && AUTH_PAGES.includes(pathname)) {
+    const dest = role === 'customer' ? '/panel' : '/dashboard';
     return NextResponse.redirect(new URL(dest, request.url));
   }
 
-  /* Role-based access: customers can't access owner routes and vice-versa */
+  // ── Control de acceso por rol ─────────────────────────────────────────
   if (isAuthenticated && role) {
-    if (isOwnerRoute && role !== 'owner') {
+    if (pathname.startsWith('/dashboard') && role !== 'owner') {
       return NextResponse.redirect(new URL('/panel', request.url));
     }
-    if (isCustomerRoute && role !== 'customer') {
+    if (pathname.startsWith('/panel') && role !== 'customer') {
       return NextResponse.redirect(new URL('/dashboard', request.url));
     }
   }
@@ -88,5 +126,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/dashboard/:path*', '/panel/:path*', '/login', '/widget/:clientId*'],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|api/).*)'],
 };

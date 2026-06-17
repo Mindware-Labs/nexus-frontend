@@ -1,3 +1,4 @@
+import { Fragment } from "react"
 import { redirect } from "next/navigation"
 import Link from "next/link"
 import {
@@ -99,35 +100,152 @@ function ErrorBanner({ message }: { message: string }) {
   )
 }
 
+// ─── Nombres legibles para campos conocidos ───────────────────────────────
+const FIELD_LABELS: Record<string, string> = {
+  name: "Nombre",
+  email: "Correo electrónico",
+  is_active: "Estado",
+  plan: "Plan",
+  temperature: "Temperatura",
+  llmProvider: "Proveedor de IA",
+  systemPrompt: "Instrucciones del bot",
+  presentationName: "Nombre del bot",
+  welcomeMessage: "Mensaje de bienvenida",
+  contactFields: "Campos de contacto",
+  notifyOnLead: "Notificar al capturar lead",
+  summaryFrequency: "Frecuencia de resumen",
+  website_url: "URL del sitio web",
+  logo_url: "Logo",
+  sector: "Sector",
+}
+
+const PLAN_MAP: Record<string, string> = {
+  trial: "Trial", starter: "Starter", pro: "Pro", enterprise: "Enterprise",
+}
+const PROVIDER_MAP: Record<string, string> = {
+  gemini: "Google Gemini", openai: "OpenAI", anthropic: "Anthropic",
+}
+const FREQUENCY_MAP: Record<string, string> = {
+  daily: "Diario", weekly: "Semanal", none: "Nunca",
+}
+const LONG_TEXT_KEYS = new Set(["systemPrompt", "welcomeMessage"])
+
+function formatScalar(key: string, value: unknown): string {
+  if (value === null || value === undefined) return "—"
+  if (typeof value === "boolean") {
+    if (key === "is_active") return value ? "Activo" : "Inactivo"
+    return value ? "Sí" : "No"
+  }
+  if (typeof value === "number") return String(value)
+  if (typeof value === "string") {
+    if (key === "plan") return PLAN_MAP[value] ?? value
+    if (key === "llmProvider") return PROVIDER_MAP[value] ?? value
+    if (key === "summaryFrequency") return FREQUENCY_MAP[value] ?? value
+    return value
+  }
+  return JSON.stringify(value)
+}
+
+function FieldValue({ fieldKey, value, side }: { fieldKey: string; value: unknown; side: "before" | "after" }) {
+  if (value === undefined || value === null) {
+    return <span className="text-muted-foreground/40 text-sm">—</span>
+  }
+  const colorClass = side === "before"
+    ? "bg-destructive/10 text-destructive/90"
+    : "bg-green-500/10 text-green-700 dark:text-green-400"
+
+  if (LONG_TEXT_KEYS.has(fieldKey) && typeof value === "string") {
+    const preview = value.length > 100 ? value.slice(0, 100) + "…" : value
+    return (
+      <span title={value} className={`inline-block cursor-help rounded px-1.5 py-0.5 text-xs ${colorClass}`}>
+        {preview}
+      </span>
+    )
+  }
+  return (
+    <span className={`inline-block rounded px-1.5 py-0.5 text-sm ${colorClass}`}>
+      {formatScalar(fieldKey, value)}
+    </span>
+  )
+}
+
+type ContactField = { key: string; label: string; enabled: boolean; required: boolean }
+
+function ContactFieldsDiff({ before, after }: { before: unknown; after: unknown }) {
+  if (!Array.isArray(before) || !Array.isArray(after)) {
+    return <span className="text-xs text-muted-foreground/60">Sin detalle disponible</span>
+  }
+  const beforeMap = new Map((before as ContactField[]).map((f) => [f.key, f]))
+  const afterMap  = new Map((after  as ContactField[]).map((f) => [f.key, f]))
+  const allKeys   = Array.from(new Set([...beforeMap.keys(), ...afterMap.keys()]))
+  const changed   = allKeys.filter((k) => JSON.stringify(beforeMap.get(k)) !== JSON.stringify(afterMap.get(k)))
+
+  if (changed.length === 0) {
+    return <span className="text-xs text-muted-foreground/60">Sin cambios detectados</span>
+  }
+  return (
+    <div className="space-y-2">
+      {changed.map((k) => {
+        const b = beforeMap.get(k)
+        const a = afterMap.get(k)
+        const fieldLabel = a?.label ?? b?.label ?? k
+        type PropChange = { name: string; before: string; after: string }
+        const props: PropChange[] = []
+        if (b?.enabled !== a?.enabled) {
+          props.push({ name: "Habilitado", before: b?.enabled ? "Sí" : "No", after: a?.enabled ? "Sí" : "No" })
+        }
+        if (b?.required !== a?.required) {
+          props.push({ name: "Requerido", before: b?.required ? "Sí" : "No", after: a?.required ? "Sí" : "No" })
+        }
+        return (
+          <div key={k} className="rounded-lg border bg-muted/30 px-3 py-2.5">
+            <p className="text-xs font-semibold text-foreground mb-2">{fieldLabel}</p>
+            <div className="grid grid-cols-[auto_1fr_1fr] gap-x-4 gap-y-1">
+              {props.map((p) => (
+                <Fragment key={p.name}>
+                  <span className="text-xs text-muted-foreground">{p.name}</span>
+                  <span className="text-xs text-destructive/80 line-through">{p.before}</span>
+                  <span className="text-xs text-green-600 dark:text-green-400">{p.after}</span>
+                </Fragment>
+              ))}
+            </div>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
 function DiffViewer({ diff }: { diff: AuditLog["diff"] }) {
   if (!diff) return <p className="text-sm text-muted-foreground">Sin cambios registrados.</p>
 
-  const keys = Array.from(
-    new Set([...Object.keys(diff.before), ...Object.keys(diff.after)])
-  )
+  const keys = Array.from(new Set([...Object.keys(diff.before), ...Object.keys(diff.after)]))
 
   return (
-    <div className="space-y-2 text-sm">
-      <div className="grid grid-cols-[auto_1fr_1fr] gap-x-3 gap-y-1">
-        <div className="font-semibold text-muted-foreground">Campo</div>
-        <div className="font-semibold text-destructive/80">Antes</div>
-        <div className="font-semibold text-green-700 dark:text-green-400">Después</div>
-        {keys.map((k) => (
-          <>
-            <div key={`k-${k}`} className="py-1 font-mono text-xs text-muted-foreground">{k}</div>
-            <div key={`b-${k}`} className="py-1 break-all">
-              {diff.before[k] !== undefined
-                ? <code className="rounded bg-destructive/10 px-1 text-xs">{JSON.stringify(diff.before[k])}</code>
-                : <span className="text-muted-foreground/50">—</span>}
-            </div>
-            <div key={`a-${k}`} className="py-1 break-all">
-              {diff.after[k] !== undefined
-                ? <code className="rounded bg-green-500/10 px-1 text-xs">{JSON.stringify(diff.after[k])}</code>
-                : <span className="text-muted-foreground/50">—</span>}
-            </div>
-          </>
-        ))}
+    <div className="space-y-1 text-sm">
+      <div className="grid grid-cols-[160px_1fr_1fr] gap-x-4 border-b pb-2">
+        <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Campo</span>
+        <span className="text-xs font-medium uppercase tracking-wide text-destructive/70">Antes</span>
+        <span className="text-xs font-medium uppercase tracking-wide text-green-700 dark:text-green-400">Después</span>
       </div>
+      {keys.map((k) => {
+        const label = FIELD_LABELS[k] ?? k
+        if (k === "contactFields") {
+          return (
+            <div key={k} className="border-b py-3 last:border-0">
+              <p className="mb-2 text-xs text-muted-foreground">{label}</p>
+              <ContactFieldsDiff before={diff.before[k]} after={diff.after[k]} />
+            </div>
+          )
+        }
+        return (
+          <div key={k} className="grid grid-cols-[160px_1fr_1fr] items-start gap-x-4 border-b py-2 last:border-0">
+            <span className="text-sm text-muted-foreground">{label}</span>
+            <FieldValue fieldKey={k} value={diff.before[k]} side="before" />
+            <FieldValue fieldKey={k} value={diff.after[k]} side="after" />
+          </div>
+        )
+      })}
     </div>
   )
 }

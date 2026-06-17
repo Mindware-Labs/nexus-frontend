@@ -210,3 +210,25 @@ export async function listCustomers(filters: CustomerListFilters = {}): Promise<
     return customer ? [customer] : []
   })
 }
+
+// KB-05: preguntas sin respuesta — vista owner por cliente
+export interface UnansweredQuestion {
+  question: string
+  frequency: number
+  last_asked_at: string
+}
+
+export async function getCustomerUnansweredQuestions(
+  customerId: number,
+  days = 30,
+): Promise<UnansweredQuestion[]> {
+  let res: Response
+  try {
+    res = await backendFetch(`/bot/customers/${customerId}/unanswered-questions?days=${days}`)
+  } catch {
+    throw new Error('No se pudo conectar con el servidor')
+  }
+  if (res.status === 401) redirect('/login')
+  if (!res.ok) throw new Error('Error al cargar las preguntas')
+  return res.json()
+}
