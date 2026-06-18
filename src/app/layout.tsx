@@ -65,6 +65,15 @@ export default function RootLayout({
       lang="es"
       className={cn("h-full", "antialiased", geistSans.variable, geistMono.variable, "font-sans", inter.variable)}
     >
+      <head>
+        {/* General Sans (Fontshare) — titulares del hero de la landing.
+            Se carga aquí (no vía @import en el CSS) porque Tailwind v4 aplana
+            los @import después de las reglas generadas y rompe el build. */}
+        <link
+          rel="stylesheet"
+          href="https://api.fontshare.com/v2/css?f[]=general-sans@400,500,600,700&display=swap"
+        />
+      </head>
       <body className="min-h-full flex flex-col">
         <TooltipProvider>{children}</TooltipProvider>
       </body>

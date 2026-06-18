@@ -94,6 +94,12 @@
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
 
+  /* Hero de la landing (spec dedicada): tono de subtexto + tipografía de
+     titulares. El fondo/foreground oscuros se aplican localmente en el
+     componente para no pisar el tema global del resto de la app. */
+  --color-hero-sub: hsl(40 6% 82%);
+  --font-general-sans: "General Sans", var(--font-sans), sans-serif;
+
   /* Paleta oficial Mindware Nexus (diseño.md) */
   --color-nexus-deep: #3d1a4e;
   --color-nexus-purple: #522566;
@@ -106,6 +112,7 @@
   --animate-float: float 7s ease-in-out infinite;
   --animate-float-slow: float 11s ease-in-out infinite;
   --animate-marquee: marquee 45s linear infinite;
+  --animate-marquee-hero: marquee 20s linear infinite;
   --animate-pulse-glow: pulse-glow 4s ease-in-out infinite;
   --animate-spin-slow: spin 18s linear infinite;
   --animate-typing-dot: typing-dot 1.2s ease-in-out infinite;
@@ -521,6 +528,58 @@
 
 @utility text-balance {
   text-wrap: balance;
+}
+
+/* Liquid glass — superficie translúcida con borde de luz superior/inferior.
+   Usada en los botones heroSecondary y en los iconos del marquee del hero. */
+.liquid-glass {
+  background: rgba(255, 255, 255, 0.01);
+  background-blend-mode: luminosity;
+  backdrop-filter: blur(4px);
+  border: none;
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.1);
+  position: relative;
+  overflow: hidden;
+}
+.liquid-glass::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1.4px;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.45) 0%,
+    rgba(255, 255, 255, 0.15) 20%,
+    rgba(255, 255, 255, 0) 40%,
+    rgba(255, 255, 255, 0) 60%,
+    rgba(255, 255, 255, 0.15) 80%,
+    rgba(255, 255, 255, 0.45) 100%
+  );
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* Texto con el degradado aurora del hero (indigo → púrpura → ámbar).
+   Reutilizado en palabras de acento de los titulares de la landing. */
+.text-gradient-aurora {
+  background-image: linear-gradient(to left, #6366f1, #a855f7, #fcd34d);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Oculta la scrollbar nativa en los carruseles con scroll-snap. */
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
 }
 
 /* Scrollbar fino para el panel de chat de la demo */
