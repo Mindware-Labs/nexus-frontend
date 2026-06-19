@@ -1,146 +1,76 @@
 'use client'
 
-import { Check } from 'lucide-react'
-import { Reveal } from './anim'
-import { SnapCarousel } from './snap-carousel'
-
-/* Límites alineados con el backend (PLAN_LIMITS): trial 100 · starter 1.000 ·
-   pro 5.000 · enterprise ilimitado. Los precios son orientativos. */
-const PLANS = [
-  {
-    name: 'Trial',
-    price: 'Gratis',
-    period: '14 días',
-    tagline: 'Para probarlo sin compromiso.',
-    messages: '100 mensajes',
-    features: ['Asistente con IA', 'Captura de leads', 'Panel básico'],
-    featured: false,
-  },
-  {
-    name: 'Starter',
-    price: '€29',
-    period: '/mes',
-    tagline: 'Para pequeños negocios que arrancan.',
-    messages: '1.000 mensajes / mes',
-    features: [
-      'Entrenamiento con tus contenidos',
-      'Calificación de leads',
-      'Resúmenes por correo',
-    ],
-    featured: false,
-  },
-  {
-    name: 'Pro',
-    price: '€89',
-    period: '/mes',
-    tagline: 'Para equipos en pleno crecimiento.',
-    messages: '5.000 mensajes / mes',
-    features: [
-      'Todo lo de Starter',
-      'Analíticas avanzadas',
-      'Conversaciones ilimitadas en historial',
-      'Soporte prioritario',
-    ],
-    featured: true,
-  },
-  {
-    name: 'Enterprise',
-    price: 'A medida',
-    period: '',
-    tagline: 'Para grandes operaciones y multi-marca.',
-    messages: 'Mensajes ilimitados',
-    features: [
-      'Multi-tenant y roles',
-      '2FA y seguridad reforzada',
-      'Integraciones a medida',
-      'Acompañamiento dedicado',
-    ],
-    featured: false,
-  },
-]
+import Link from 'next/link'
 
 export function PricingSection() {
   return (
-    <section id="planes" className="relative py-28 md:py-40">
-      <Reveal className="mx-auto mb-14 max-w-3xl px-6 text-center">
-        <p className="text-sm font-medium tracking-[0.2em] text-foreground/40 uppercase">
-          Planes
-        </p>
-        <h2 className="mt-5 font-[family-name:var(--font-general-sans)] text-4xl leading-[1.05] font-normal tracking-[-0.02em] text-foreground md:text-6xl">
-          Empieza gratis,{' '}
-          <span className="text-gradient-aurora">crece sin límites</span>
-        </h2>
-        <p className="mx-auto mt-6 max-w-md text-lg leading-8 text-foreground/55">
-          Sin permanencia. Cambia de plan cuando lo necesites. Arrastra para ver
-          todas las opciones.
-        </p>
-      </Reveal>
+    <section id="pricing" className="relative overflow-hidden border-t border-white/5 bg-[#010101] py-40">
+      
+      {/* Background Aurora */}
+      <div className="pointer-events-none absolute inset-0 z-0 flex items-center justify-center">
+        <div className="absolute top-[20%] h-[500px] w-[800px] rounded-[100%] bg-nexus-purple/10 blur-[120px] mix-blend-screen" />
+        <div className="absolute top-[40%] h-[600px] w-[600px] rounded-[100%] bg-nexus-lavender/5 blur-[150px] mix-blend-screen" />
+      </div>
 
-      <SnapCarousel label="Planes de precios">
-        {PLANS.map((plan) => (
-          <div
-            key={plan.name}
-            className={[
-              'flex w-[85vw] shrink-0 snap-center flex-col rounded-[28px] p-8 select-none sm:w-[24rem] md:p-10',
-              plan.featured
-                ? 'liquid-glass bg-gradient-to-b from-purple-500/[0.12] to-transparent ring-1 ring-purple-400/30'
-                : 'liquid-glass',
-            ].join(' ')}
-          >
-            <div className="flex items-center justify-between">
-              <h3 className="font-[family-name:var(--font-general-sans)] text-xl font-semibold text-foreground">
-                {plan.name}
-              </h3>
-              {plan.featured && (
-                <span className="rounded-full bg-gradient-to-r from-indigo-500/30 to-purple-500/30 px-3 py-1 text-xs font-semibold text-foreground">
-                  Más elegido
-                </span>
-              )}
+      <div className="relative z-10 mx-auto max-w-6xl px-6">
+        <div className="mx-auto max-w-3xl text-center">
+          <p className="text-sm font-medium tracking-[0.22em] text-white/36 uppercase">Planes a tu medida</p>
+          <h2 className="mt-5 text-5xl font-semibold tracking-tighter text-white md:text-7xl">
+            Soluciones para cada etapa.
+          </h2>
+          <p className="mx-auto mt-6 max-w-3xl text-lg leading-8 text-gray-400">
+            Comienza a automatizar hoy mismo con planes diseñados para escalar junto al crecimiento de tu negocio.
+          </p>
+        </div>
+
+        <div className="mt-16 grid grid-cols-1 gap-8 md:grid-cols-2">
+          <div className="rounded-[2.2rem] border border-white/7 bg-[#0a0a0a] p-10 shadow-[0_18px_70px_rgba(0,0,0,0.22)] md:p-12">
+            <div className="inline-flex rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs tracking-[0.18em] text-white/60 uppercase">
+              Plan Starter
             </div>
-
-            <p className="mt-2 text-sm text-foreground/55">{plan.tagline}</p>
-
-            <div className="mt-8 flex items-end gap-1">
-              <span className="font-[family-name:var(--font-general-sans)] text-5xl font-semibold text-foreground">
-                {plan.price}
-              </span>
-              {plan.period && (
-                <span className="pb-1.5 text-sm text-foreground/50">
-                  {plan.period}
-                </span>
-              )}
-            </div>
-
-            <p className="mt-5 text-sm font-medium text-foreground/80">
-              {plan.messages}
+            <h3 className="mt-6 text-3xl font-semibold text-white md:text-4xl">Ideal para comenzar</h3>
+            <p className="mt-4 max-w-lg text-base leading-7 text-gray-400">
+              Obtén lo esencial para capturar leads y responder consultas frecuentes sin complicaciones.
             </p>
 
-            <ul className="mt-6 flex flex-1 flex-col gap-3">
-              {plan.features.map((f) => (
-                <li
-                  key={f}
-                  className="flex items-start gap-3 text-sm text-foreground/70"
-                >
-                  <Check className="mt-0.5 size-4 shrink-0 text-purple-300" />
-                  {f}
-                </li>
-              ))}
+            <ul className="mt-8 space-y-4 text-sm leading-7 text-white/72">
+              <li className="flex items-start gap-3"><span className="mt-2 h-1.5 w-1.5 rounded-full bg-nexus-lavender" /> Hasta 1,000 conversaciones/mes</li>
+              <li className="flex items-start gap-3"><span className="mt-2 h-1.5 w-1.5 rounded-full bg-nexus-lavender" /> Captura básica de leads</li>
+              <li className="flex items-start gap-3"><span className="mt-2 h-1.5 w-1.5 rounded-full bg-nexus-lavender" /> Panel de control y analítica estándar</li>
             </ul>
 
-            <a
+            <Link
               href="/login"
-              className={[
-                'mt-9 grid h-12 place-items-center rounded-full text-sm font-semibold transition-transform duration-200 hover:scale-[1.02] active:scale-[0.98]',
-                plan.featured
-                  ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow-lg shadow-purple-500/30'
-                  : 'liquid-glass text-foreground hover:bg-white/[0.05]',
-              ].join(' ')}
+              className="mt-10 inline-flex rounded-full border border-white/10 bg-white/5 px-6 py-3 text-sm font-medium tracking-[0.14em] text-white uppercase transition-colors hover:border-white/20 hover:bg-white/8"
             >
-              {plan.price === 'A medida' ? 'Hablemos' : 'Empezar'}
-            </a>
+              Comenzar gratis
+            </Link>
           </div>
-        ))}
-      </SnapCarousel>
+
+          <div className="rounded-[2.2rem] border border-nexus-purple/60 bg-[linear-gradient(180deg,rgba(82,37,102,0.22),rgba(17,17,17,1))] p-10 shadow-[0_30px_90px_rgba(61,26,78,0.34)] md:p-12">
+            <div className="inline-flex rounded-full bg-white px-4 py-1.5 text-xs font-semibold tracking-[0.18em] text-black uppercase">
+              Plan Pro
+            </div>
+            <h3 className="mt-6 text-3xl font-semibold text-white md:text-4xl">Autonomía total para tu negocio</h3>
+            <p className="mt-4 max-w-lg text-base leading-7 text-gray-300">
+              Para empresas con alto volumen que necesitan integraciones avanzadas y personalización completa.
+            </p>
+
+            <ul className="mt-8 space-y-4 text-sm leading-7 text-white/78">
+              <li className="flex items-start gap-3"><span className="mt-2 h-1.5 w-1.5 rounded-full bg-nexus-mint" /> Conversaciones ilimitadas</li>
+              <li className="flex items-start gap-3"><span className="mt-2 h-1.5 w-1.5 rounded-full bg-nexus-mint" /> Lead scoring y automatización avanzada</li>
+              <li className="flex items-start gap-3"><span className="mt-2 h-1.5 w-1.5 rounded-full bg-nexus-mint" /> Acceso a API y soporte prioritario 24/7</li>
+            </ul>
+
+            <Link
+              href="/login"
+              className="mt-10 inline-flex rounded-full bg-white px-6 py-3 text-sm font-semibold tracking-[0.14em] text-black uppercase transition-transform duration-200 hover:scale-[1.03] active:scale-[0.97]"
+            >
+              Contactar ventas
+            </Link>
+          </div>
+        </div>
+      </div>
     </section>
   )
 }

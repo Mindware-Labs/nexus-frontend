@@ -1,79 +1,46 @@
 'use client'
 
-import { motion, useScroll, useTransform } from 'motion/react'
-import { useRef } from 'react'
-import { Button } from '@/components/ui/button'
-import { EASE } from './anim'
+import Link from 'next/link'
 
 export function CtaSection() {
-  const ref = useRef<HTMLDivElement>(null)
-  const { scrollYProgress } = useScroll({
-    target: ref,
-    offset: ['start end', 'end start'],
-  })
-  const headlineY = useTransform(scrollYProgress, [0, 1], [60, -60])
-  const glowScale = useTransform(scrollYProgress, [0, 0.5, 1], [0.8, 1.1, 0.8])
-
   return (
-    <section
-      ref={ref}
-      className="relative overflow-hidden px-6 py-40 text-center md:py-56"
-    >
-      <motion.div
-        aria-hidden
-        style={{ scale: glowScale }}
-        className="pointer-events-none absolute top-1/2 left-1/2 h-[560px] w-[560px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(closest-side,rgba(124,58,237,0.28),transparent)] blur-3xl"
-      />
-
-      <motion.div
-        style={{ y: headlineY }}
-        className="relative mx-auto max-w-4xl"
-      >
-        <motion.h2
-          initial={{ opacity: 0, y: 40 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: '-100px' }}
-          transition={{ duration: 0.9, ease: EASE }}
-          className="font-[family-name:var(--font-general-sans)] text-5xl leading-[1.02] font-normal tracking-[-0.02em] text-foreground md:text-8xl"
-        >
-          Tu próximo cliente
+    <section className="relative overflow-hidden border-t border-white/5 bg-black py-40">
+      {/* End of journey intense glow */}
+      <div className="pointer-events-none absolute bottom-0 left-1/2 z-0 h-[600px] w-[1000px] -translate-x-1/2 translate-y-1/2 rounded-[100%] bg-nexus-lavender/20 blur-[150px] mix-blend-screen" />
+      <div className="pointer-events-none absolute bottom-0 left-1/2 z-0 h-[400px] w-[600px] -translate-x-1/2 translate-y-1/2 rounded-[100%] bg-nexus-mint/10 blur-[100px] mix-blend-screen" />
+      
+      <div className="relative z-10 mx-auto max-w-4xl px-6 text-center">
+        <p className="text-sm font-medium tracking-[0.22em] text-white/36 uppercase">Cierre</p>
+        <h2 className="mt-5 text-5xl leading-[0.95] font-semibold tracking-tighter text-white md:text-8xl">
+          Listo para
           <br />
-          ya está <span className="text-gradient-aurora">escribiendo</span>
-        </motion.h2>
+          operar.
+        </h2>
+        <p className="mx-auto mt-6 max-w-2xl text-lg leading-8 text-gray-400">
+          Si ya tienes acceso, entra a la plataforma. Si estas evaluando Nexus, revisa la politica publica o habla con Mindware Labs.
+        </p>
 
-        <motion.p
-          initial={{ opacity: 0, y: 24 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: '-80px' }}
-          transition={{ duration: 0.8, delay: 0.15, ease: EASE }}
-          className="mx-auto mt-7 max-w-md text-lg leading-8 text-foreground/60"
-        >
-          Deja que Nexus responda, califique y convierta mientras tú haces
-          crecer tu negocio.
-        </motion.p>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: '-80px' }}
-          transition={{ duration: 0.8, delay: 0.3, ease: EASE }}
-          className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row"
-        >
-          <Button
-            asChild
-            className="h-auto rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 px-8 py-4 text-base font-semibold text-white shadow-lg shadow-purple-500/30 transition-transform duration-200 hover:scale-[1.03] active:scale-[0.98]"
+        <div className="mt-12 flex flex-col justify-center gap-4 sm:flex-row">
+          <Link
+            href="/login"
+            className="rounded-full bg-white px-8 py-4 text-sm font-semibold tracking-[0.16em] text-black uppercase transition-transform duration-200 hover:scale-[1.03] active:scale-[0.97]"
           >
-            <a href="/login">Empieza gratis</a>
-          </Button>
-          <Button
-            asChild
-            variant="heroSecondary"
-            className="h-auto px-8 py-4 text-base"
+            Iniciar sesion
+          </Link>
+          <Link
+            href="/privacidad"
+            className="rounded-full border border-white/10 bg-white/5 px-8 py-4 text-sm font-medium tracking-[0.14em] text-white uppercase transition-colors hover:border-white/20 hover:bg-white/8"
           >
-            <a href="#planes">Ver planes</a>
-          </Button>
-        </motion.div>
-      </motion.div>
+            Ver politica de privacidad
+          </Link>
+          <a
+            href="mailto:labsmindware@gmail.com"
+            className="rounded-full border border-transparent px-8 py-4 text-sm font-medium tracking-[0.14em] text-white/72 uppercase transition-colors hover:text-white"
+          >
+            Contactar a Mindware
+          </a>
+        </div>
+      </div>
     </section>
   )
 }

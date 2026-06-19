@@ -1,30 +1,24 @@
 import { ScrollProgress } from '@/components/landing/anim'
-import { CtaSection } from '@/components/landing/cta-section'
-import { FeaturesSection } from '@/components/landing/features-section'
+import { Navbar } from '@/components/landing/navbar'
 import { Hero } from '@/components/landing/hero'
-import { PricingSection } from '@/components/landing/pricing-section'
-import { SiteFooter } from '@/components/landing/site-footer'
-import { StatsSection } from '@/components/landing/stats-section'
 import { StepsSection } from '@/components/landing/steps-section'
-import { TestimonialsSection } from '@/components/landing/testimonials-section'
+import { UseCasesSection } from '@/components/landing/use-cases-section'
+import { KnowledgeBaseSection } from '@/components/landing/knowledge-base-section'
+import { LeadScoringSection } from '@/components/landing/lead-scoring-section'
+import { PricingSection } from '@/components/landing/pricing-section'
+import { CtaSection } from '@/components/landing/cta-section'
+import { SiteFooter } from '@/components/landing/site-footer'
 
 export default function Home() {
   return (
-    <div
-      className="relative overflow-x-hidden bg-background font-[family-name:var(--font-geist-sans)] text-foreground"
-      style={
-        {
-          '--background': 'hsl(260 87% 3%)',
-          '--foreground': 'hsl(40 6% 95%)',
-        } as React.CSSProperties
-      }
-    >
+    <div className="relative overflow-clip bg-black font-[family-name:var(--font-geist-sans)] text-white selection:bg-nexus-lavender selection:text-black">
       <ScrollProgress />
+      <Navbar />
       <Hero />
       <StepsSection />
-      <FeaturesSection />
-      <StatsSection />
-      <TestimonialsSection />
+      <UseCasesSection />
+      <KnowledgeBaseSection />
+      <LeadScoringSection />
       <PricingSection />
       <CtaSection />
       <SiteFooter />

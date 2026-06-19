@@ -2,12 +2,12 @@ export const DEFAULT_PRIVACY_POLICY = `POLÍTICA DE PRIVACIDAD Y PROTECCIÓN DE 
 
 Última actualización: junio de 2026
 
-De conformidad con la Ley No. 172-13 sobre Protección de Datos Personales de la República Dominicana, la Ley No. 53-07 sobre Crímenes y Delitos de Alta Tecnología y la Ley No. 126-02 sobre Comercio Electrónico, Documentos y Firmas Digitales, Mindware Labs, S.R.L. (en adelante "Mindware" o el "Responsable") informa sobre el tratamiento que da a los datos personales de los usuarios que interactúan con los chatbots gestionados a través de la plataforma Mindware Nexus.
+De conformidad con la Ley No. 172-13 sobre Protección de Datos Personales de la República Dominicana, la Ley No. 53-07 sobre Crímenes y Delitos de Alta Tecnología y la Ley No. 126-02 sobre Comercio Electrónico, Documentos y Firmas Digitales, Mindware Labs. (en adelante "Mindware" o el "Responsable") informa sobre el tratamiento que da a los datos personales de los usuarios que interactúan con los chatbots gestionados a través de la plataforma Mindware Nexus.
 
 
 1. RESPONSABLE DEL TRATAMIENTO
 
-Mindware Labs, S.R.L.
+Mindware Labs.
 Santo Domingo, República Dominicana
 Correo de contacto: labsmindware@gmail.com
 
@@ -130,6 +130,6 @@ Mindware se reserva el derecho de actualizar esta Política de Privacidad para a
 
 
 Para cualquier consulta relacionada con la protección de sus datos personales, puede contactarnos en:
-labsmindware@gmail.com`
+labsmindware@gmail.com`;
 
-export const DEFAULT_CONSENT_TEXT = `Al proporcionar tus datos de contacto, consientes que sean tratados por Mindware Labs, S.R.L. con la finalidad de atender tu consulta y gestionar el seguimiento comercial, de conformidad con la Ley No. 172-13 sobre Protección de Datos Personales de la República Dominicana. Puedes ejercer tus derechos ARCO escribiendo a labsmindware@gmail.com.`
+export const DEFAULT_CONSENT_TEXT = `Al proporcionar tus datos de contacto, consientes que sean tratados por Mindware Labs. con la finalidad de atender tu consulta y gestionar el seguimiento comercial, de conformidad con la Ley No. 172-13 sobre Protección de Datos Personales de la República Dominicana. Puedes ejercer tus derechos ARCO escribiendo a labsmindware@gmail.com.`;

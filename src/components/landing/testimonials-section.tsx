@@ -1,91 +1,53 @@
 'use client'
 
-import { Reveal } from './anim'
-import { SnapCarousel } from './snap-carousel'
-
-const TESTIMONIALS = [
+const ITEMS = [
   {
-    quote:
-      'Pasamos de responder en horas a responder en segundos. Los leads llegan calificados y mi equipo solo se dedica a cerrar.',
-    name: 'Lucía Fernández',
-    role: 'Directora Comercial',
-    company: 'Vortex',
+    number: '01',
+    title: 'Landing publica',
+    body: 'Explica el producto, aterriza el flujo y dirige al acceso sin duplicar logica de autenticacion ni inventar promesas comerciales.',
   },
   {
-    quote:
-      'Lo instalamos un martes por la tarde. El miércoles ya teníamos la primera reunión agendada por el asistente.',
-    name: 'Marc Oliveras',
-    role: 'Fundador',
-    company: 'Nimbus',
+    number: '02',
+    title: 'Panel Owner',
+    body: 'Concentra gestion de clientes, tenants, bots, planes, reportes, auditoria, API keys y privacidad desde la operacion central.',
   },
   {
-    quote:
-      'Lo mejor no es que responda, es que entiende. Sabe cuándo alguien está listo para comprar y nos lo dice.',
-    name: 'Daniela Ríos',
-    role: 'Head of Growth',
-    company: 'Prysma',
-  },
-  {
-    quote:
-      'Dejamos de perder consultas a las 3 de la mañana. Ahora cada visita nocturna se convierte en una oportunidad.',
-    name: 'Iván Castro',
-    role: 'CEO',
-    company: 'Cirrus',
-  },
-  {
-    quote:
-      'El resumen diario por correo cambió nuestras mañanas. Sé exactamente con quién hablar antes de abrir el portátil.',
-    name: 'Sara Méndez',
-    role: 'Responsable de Ventas',
-    company: 'Kynder',
+    number: '03',
+    title: 'Panel Customer',
+    body: 'Permite revisar leads, conversaciones, analitica, estado del bot, plan, notificaciones y configuracion empresarial.',
   },
 ]
 
 export function TestimonialsSection() {
   return (
-    <section id="historias" className="relative py-28 md:py-40">
-      <Reveal className="mx-auto mb-14 max-w-3xl px-6 text-center">
-        <p className="text-sm font-medium tracking-[0.2em] text-foreground/40 uppercase">
-          Historias reales
-        </p>
-        <h2 className="mt-5 font-[family-name:var(--font-general-sans)] text-4xl leading-[1.05] font-normal tracking-[-0.02em] text-foreground md:text-6xl">
-          Equipos que ya{' '}
-          <span className="text-gradient-aurora">dejaron de perder</span>{' '}
-          oportunidades
-        </h2>
-      </Reveal>
+    <section className="relative overflow-hidden border-t border-white/5 bg-gradient-to-b from-[#010101] to-black py-40">
+      <div className="pointer-events-none absolute top-0 left-1/2 h-[420px] w-[900px] -translate-x-1/2 rounded-[100%] bg-nexus-lavender/5 blur-[140px]" />
 
-      <SnapCarousel label="Testimonios de clientes">
-        {TESTIMONIALS.map((t, i) => (
-          <figure
-            key={t.name}
-            className="liquid-glass flex w-[85vw] shrink-0 snap-center flex-col justify-between rounded-[28px] p-8 select-none sm:w-[28rem] md:p-10"
-          >
-            <span
-              aria-hidden
-              className="text-gradient-aurora font-[family-name:var(--font-general-sans)] text-6xl leading-none font-semibold"
+      <div className="relative z-10 mx-auto max-w-6xl px-6">
+        <div className="mx-auto max-w-3xl text-center">
+          <p className="text-sm font-medium tracking-[0.22em] text-white/36 uppercase">Arquitectura visible</p>
+          <h2 className="mt-5 text-4xl leading-tight font-semibold tracking-tight text-white md:text-6xl">
+            Tres superficies claras
+            <br />
+            para una operacion ordenada.
+          </h2>
+        </div>
+
+        <div className="mt-16 grid gap-6 md:grid-cols-3">
+          {ITEMS.map((item) => (
+            <article
+              key={item.title}
+              className="rounded-[2rem] border border-white/8 bg-white/[0.03] p-8 shadow-[0_16px_50px_rgba(0,0,0,0.16)]"
             >
-              {String(i + 1).padStart(2, '0')}
-            </span>
-            <blockquote className="mt-6 text-xl leading-8 font-medium text-foreground/90 md:text-2xl">
-              “{t.quote}”
-            </blockquote>
-            <figcaption className="mt-8 flex items-center gap-3">
-              <span className="liquid-glass grid size-11 place-items-center rounded-full text-sm font-semibold text-foreground">
-                {t.name[0]}
-              </span>
-              <span className="text-sm">
-                <span className="block font-semibold text-foreground">
-                  {t.name}
-                </span>
-                <span className="block text-foreground/50">
-                  {t.role} · {t.company}
-                </span>
-              </span>
-            </figcaption>
-          </figure>
-        ))}
-      </SnapCarousel>
+              <div className="text-sm font-medium tracking-[0.22em] text-white/32 uppercase">
+                {item.number}
+              </div>
+              <h3 className="mt-6 text-2xl font-semibold text-white">{item.title}</h3>
+              <p className="mt-4 text-base leading-7 text-gray-400">{item.body}</p>
+            </article>
+          ))}
+        </div>
+      </div>
     </section>
   )
 }
