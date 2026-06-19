@@ -1,7 +1,9 @@
-import { Shield } from "lucide-react";
+import { Shield, ArrowLeft } from "lucide-react";
+import Link from "next/link";
 import { Navbar } from "@/components/landing/navbar";
 import { MotionProvider } from "@/components/landing/motion-provider";
 import { DEFAULT_PRIVACY_POLICY } from "@/lib/default-privacy-policy";
+import { SiteFooter } from "@/components/landing/site-footer";
 
 export const metadata = {
   title: "Política de Privacidad — Mindware Nexus",
@@ -21,7 +23,6 @@ interface PublicPrivacy {
 async function fetchPublicPrivacy(): Promise<PublicPrivacy | null> {
   if (!BACKEND) return null;
 
-  // En desarrollo permitimos que la landing funcione sin backend.
   if (process.env.NODE_ENV === "development") return null;
 
   try {
@@ -42,52 +43,85 @@ export default async function PrivacidadPage() {
 
   return (
     <MotionProvider>
-      <Navbar />
-      <main className="flex-1 bg-nexus-deep text-white/90">
-        <div className="mx-auto max-w-3xl px-5 pb-20 pt-28 sm:px-8">
-          <div className="mb-8 flex items-center gap-3">
-            <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-nexus-purple to-nexus-lavender shadow-lg shadow-nexus-purple/30">
-              <Shield className="size-5 text-white" />
-            </span>
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight text-white">
-                Política de Privacidad
-              </h1>
-              <p className="mt-0.5 text-sm text-white/50">
-                Mindware Labs, República Dominicana
-              </p>
-            </div>
-          </div>
-
-          {updatedAt && (
-            <p className="mb-6 text-xs text-white/40">
-              Última actualización:{" "}
-              {new Date(updatedAt).toLocaleDateString("es", {
-                year: "numeric",
-                month: "long",
-                day: "numeric",
-              })}
-            </p>
-          )}
-
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-6 sm:p-8">
-            <pre className="font-[inherit] text-sm leading-relaxed whitespace-pre-wrap text-white/80">
-              {policyText}
-            </pre>
-          </div>
-
-          <div className="mt-8 rounded-xl border border-nexus-lavender/20 bg-nexus-purple/10 px-5 py-4 text-sm text-white/70">
-            Para consultas sobre privacidad o ejercer tus derechos ARCO,
-            escríbenos a{" "}
-            <a
-              href="mailto:labsmindware@gmail.com"
-              className="text-nexus-lavender hover:underline"
-            >
-              labsmindware@gmail.com
-            </a>
-          </div>
+      <div className="relative min-h-screen bg-[#020202] text-white selection:bg-nexus-lavender selection:text-black flex flex-col">
+        {/* Ambient Glows */}
+        <div className="pointer-events-none fixed inset-0 z-0 flex justify-center">
+          <div className="absolute top-[-10%] h-[500px] w-[800px] rounded-full bg-nexus-purple/10 blur-[120px] mix-blend-screen" />
+          <div className="absolute top-[20%] right-[-10%] h-[400px] w-[400px] rounded-full bg-nexus-lavender/5 blur-[100px] mix-blend-screen" />
         </div>
-      </main>
+
+        <Navbar />
+
+        <main className="relative z-10 flex-1 pt-32 pb-24 px-6 md:px-12">
+          <div className="mx-auto max-w-4xl">
+            
+            {/* Header Section */}
+            <div className="mb-12">
+              <Link 
+                href="/" 
+                className="inline-flex items-center gap-2 text-sm font-medium text-white/50 hover:text-white transition-colors mb-8"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                Volver al inicio
+              </Link>
+              
+              <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+                <div className="flex items-center gap-4">
+                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 bg-white/5 shadow-[0_0_30px_rgba(173,116,195,0.15)]">
+                    <Shield className="h-6 w-6 text-nexus-lavender" />
+                  </div>
+                  <div>
+                    <h1 className="text-3xl font-semibold tracking-tight text-white md:text-5xl">
+                      Política de Privacidad
+                    </h1>
+                    <p className="mt-2 text-sm tracking-widest text-nexus-lavender/60 uppercase font-medium">
+                      Mindware Labs, Rep. Dom.
+                    </p>
+                  </div>
+                </div>
+                
+                {updatedAt && (
+                  <div className="rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs text-white/50 backdrop-blur-md">
+                    Actualizado: {new Date(updatedAt).toLocaleDateString("es", {
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric",
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Content Document */}
+            <div className="rounded-[2rem] border border-white/10 bg-black/40 p-8 shadow-2xl backdrop-blur-2xl md:p-12 relative overflow-hidden">
+              {/* Subtle top border glow */}
+              <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+              
+              <div className="prose prose-invert max-w-none">
+                <pre className="font-sans text-sm leading-[1.8] md:text-base md:leading-loose text-gray-300 whitespace-pre-wrap">
+                  {policyText}
+                </pre>
+              </div>
+            </div>
+
+            {/* Footer Contact */}
+            <div className="mt-8 flex flex-col md:flex-row items-center justify-between gap-4 rounded-[1.5rem] border border-nexus-lavender/20 bg-[linear-gradient(90deg,rgba(82,37,102,0.1),rgba(17,17,17,0.5))] px-8 py-6 backdrop-blur-xl">
+              <p className="text-sm text-white/70">
+                Para consultas sobre privacidad o ejercer tus derechos ARCO, contáctanos.
+              </p>
+              <a
+                href="mailto:labsmindware@gmail.com"
+                className="inline-flex items-center justify-center rounded-full bg-white px-6 py-2.5 text-xs font-bold tracking-[0.14em] text-black uppercase transition-transform hover:scale-[1.02] active:scale-[0.98]"
+              >
+                labsmindware@gmail.com
+              </a>
+            </div>
+
+          </div>
+        </main>
+        
+        <SiteFooter />
+      </div>
     </MotionProvider>
   );
 }

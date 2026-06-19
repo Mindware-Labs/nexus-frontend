@@ -14,7 +14,7 @@ const loadFeatures = () =>
    usuario tiene activado prefers-reduced-motion. */
 export function MotionProvider({ children }: { children: ReactNode }) {
   return (
-    <LazyMotion features={loadFeatures} strict>
+    <LazyMotion features={loadFeatures}>
       <MotionConfig reducedMotion="user">{children}</MotionConfig>
     </LazyMotion>
   );

@@ -79,41 +79,53 @@ export function UseCasesSection() {
             {SCENES.map((scene) => (
               <div key={scene.title} className="relative flex h-full w-[100vw] items-center p-6 lg:w-[60vw] lg:p-12 xl:p-20">
                 
-                {/* Redesigned Card Container */}
-                <div className="group relative w-full overflow-hidden rounded-[32px] border border-white/10 bg-white/[0.02] p-8 shadow-2xl backdrop-blur-xl transition-all duration-500 hover:border-white/20 hover:bg-white/[0.04] md:p-12 lg:h-auto min-h-[480px] flex flex-col justify-between">
+                {/* Ultra Premium Card Container */}
+                <div className="group relative w-full h-[540px] md:h-[600px] overflow-hidden rounded-[2.5rem] border border-white/[0.05] bg-[#070707] shadow-[0_30px_100px_-20px_rgba(0,0,0,0.8)] transition-all duration-700 hover:border-white/[0.12]">
                   
-                  {/* Subtle Inner Glow */}
-                  <div className={`pointer-events-none absolute -left-20 -top-20 h-64 w-64 rounded-full bg-gradient-to-br ${scene.glow} to-transparent blur-[80px] opacity-50 transition-opacity duration-700 group-hover:opacity-100`} />
-
-                  {/* Giant Typography Number Background */}
-                  <div className="pointer-events-none absolute -bottom-10 -right-6 text-[180px] font-bold leading-none tracking-tighter text-white/[0.03] transition-transform duration-700 group-hover:scale-105 md:-bottom-16 md:-right-10 md:text-[240px]">
+                  {/* Subtle Gradient Glow on Hover */}
+                  <div className={`absolute inset-0 opacity-0 bg-gradient-to-br ${scene.glow} to-transparent mix-blend-screen transition-opacity duration-1000 group-hover:opacity-[0.08]`} />
+                  
+                  {/* Giant Outlined Typography Number */}
+                  <div 
+                    className="pointer-events-none absolute -bottom-10 -right-6 text-[180px] md:text-[280px] font-bold leading-none tracking-tighter text-transparent transition-all duration-1000 group-hover:scale-105" 
+                    style={{ WebkitTextStroke: '2px rgba(255,255,255,0.04)' }}
+                  >
                     {scene.number}
                   </div>
                   
-                  <div className="relative z-10">
-                    <div className="flex items-center gap-4 mb-8">
-                      <div className={`h-2 w-2 rounded-full ${scene.accent} shadow-[0_0_12px_rgba(255,255,255,0.3)]`} />
-                      <div className="text-xs font-bold tracking-[0.2em] text-white/50 uppercase">
-                        {scene.eyebrow}
+                  <div className="relative h-full flex flex-col justify-between p-8 md:p-12 lg:p-16">
+                    
+                    <div>
+                      {/* Eyebrow & Status Dot */}
+                      <div className="flex items-center gap-4 mb-8">
+                        <div className={`h-2.5 w-2.5 rounded-full ${scene.accent} shadow-[0_0_12px_rgba(255,255,255,0.4)] animate-pulse`} />
+                        <div className="text-[11px] font-bold tracking-[0.25em] text-white/40 uppercase">
+                          {scene.eyebrow}
+                        </div>
                       </div>
+                      
+                      {/* Main Title */}
+                      <h3 className="text-3xl leading-[1.15] font-semibold tracking-tight text-white lg:text-5xl lg:leading-[1.15] max-w-[90%]">
+                        {scene.title}
+                      </h3>
+                      
+                      {/* Animated Divider */}
+                      <div className="mt-8 h-px w-12 bg-white/10 transition-all duration-700 ease-out group-hover:w-32 group-hover:bg-white/30" />
+                      
+                      {/* Body Text */}
+                      <p className="mt-8 text-[15px] md:text-[17px] leading-relaxed text-white/50 max-w-xl font-light">
+                        {scene.body}
+                      </p>
                     </div>
                     
-                    <h3 className="text-3xl leading-[1.15] font-medium tracking-tight text-white lg:text-4xl lg:leading-[1.15] max-w-[90%]">
-                      {scene.title}
-                    </h3>
+                    {/* Bottom Detail */}
+                    <div className="mt-12 border-l border-white/10 pl-6 py-1 transition-colors duration-500 group-hover:border-white/30">
+                      <p className="text-sm font-medium leading-relaxed text-white/80 max-w-md">
+                        {scene.detail}
+                      </p>
+                    </div>
                     
-                    <p className="mt-6 text-[17px] leading-relaxed text-white/60 max-w-xl">
-                      {scene.body}
-                    </p>
                   </div>
-                  
-                  {/* Detached Detail Block */}
-                  <div className="relative z-10 mt-12 border-l-2 border-white/10 pl-6 py-1 transition-colors duration-500 group-hover:border-white/30">
-                    <p className="text-sm font-medium leading-relaxed text-white/80 max-w-md">
-                      {scene.detail}
-                    </p>
-                  </div>
-
                 </div>
                 
               </div>

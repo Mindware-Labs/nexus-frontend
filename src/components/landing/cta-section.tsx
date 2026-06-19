@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { motion } from 'motion/react'
 
 export function CtaSection() {
   return (
@@ -9,7 +10,13 @@ export function CtaSection() {
       <div className="pointer-events-none absolute bottom-0 left-1/2 z-0 h-[600px] w-[1000px] -translate-x-1/2 translate-y-1/2 rounded-[100%] bg-nexus-lavender/20 blur-[150px] mix-blend-screen" />
       <div className="pointer-events-none absolute bottom-0 left-1/2 z-0 h-[400px] w-[600px] -translate-x-1/2 translate-y-1/2 rounded-[100%] bg-nexus-mint/10 blur-[100px] mix-blend-screen" />
       
-      <div className="relative z-10 mx-auto max-w-4xl px-6 text-center">
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.95 }}
+        whileInView={{ opacity: 1, scale: 1 }}
+        viewport={{ once: true, margin: "-100px" }}
+        transition={{ duration: 0.7, ease: [0.23, 1, 0.32, 1] }}
+        className="relative z-10 mx-auto max-w-4xl px-6 text-center"
+      >
         <p className="text-sm font-medium tracking-[0.22em] text-white/36 uppercase">Cierre</p>
         <h2 className="mt-5 text-5xl leading-[0.95] font-semibold tracking-tighter text-white md:text-8xl">
           Listo para
@@ -40,7 +47,7 @@ export function CtaSection() {
             Contactar a Mindware
           </a>
         </div>
-      </div>
+      </motion.div>
     </section>
   )
 }

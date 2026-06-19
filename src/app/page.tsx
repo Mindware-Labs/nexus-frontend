@@ -8,10 +8,12 @@ import { LeadScoringSection } from '@/components/landing/lead-scoring-section'
 import { PricingSection } from '@/components/landing/pricing-section'
 import { CtaSection } from '@/components/landing/cta-section'
 import { SiteFooter } from '@/components/landing/site-footer'
+import { LoadingScreen } from '@/components/landing/loading-screen'
 
 export default function Home() {
   return (
     <div className="relative overflow-clip bg-black font-[family-name:var(--font-geist-sans)] text-white selection:bg-nexus-lavender selection:text-black">
+      <LoadingScreen />
       <ScrollProgress />
       <Navbar />
       <Hero />
