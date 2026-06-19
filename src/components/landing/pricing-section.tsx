@@ -35,8 +35,9 @@ export function PricingSection() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-100px" }}
           transition={{ duration: 0.7, delay: 0.2, ease: [0.23, 1, 0.32, 1] }}
-          className="mt-12 grid grid-cols-1 gap-6 md:grid-cols-2 max-w-4xl mx-auto"
+          className="mt-12 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 max-w-6xl mx-auto"
         >
+          {/* STARTER */}
           <div className="rounded-[2rem] border border-white/7 bg-[#0a0a0a] p-8 shadow-[0_18px_70px_rgba(0,0,0,0.22)] md:p-10 flex flex-col justify-between transition-transform duration-500 hover:-translate-y-2">
             <div>
               <div className="inline-flex rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-[10px] font-semibold tracking-[0.18em] text-white/60 uppercase">
@@ -62,7 +63,9 @@ export function PricingSection() {
             </Link>
           </div>
 
-          <div className="rounded-[2rem] border border-nexus-purple/60 bg-[linear-gradient(180deg,rgba(82,37,102,0.22),rgba(17,17,17,1))] p-8 shadow-[0_30px_90px_rgba(61,26,78,0.34)] md:p-10 flex flex-col justify-between transition-transform duration-500 hover:-translate-y-2">
+          {/* PRO */}
+          <div className="rounded-[2rem] border border-nexus-purple/60 bg-[linear-gradient(180deg,rgba(82,37,102,0.22),rgba(17,17,17,1))] p-8 shadow-[0_30px_90px_rgba(61,26,78,0.34)] md:p-10 flex flex-col justify-between transition-transform duration-500 hover:-translate-y-2 relative overflow-hidden">
+            <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-nexus-lavender to-transparent opacity-50" />
             <div>
               <div className="inline-flex rounded-full bg-white px-3 py-1.5 text-[10px] font-bold tracking-[0.18em] text-black uppercase">
                 Plan Pro
@@ -73,9 +76,9 @@ export function PricingSection() {
               </p>
 
               <ul className="mt-6 space-y-3 text-[13px] leading-relaxed text-white/78">
-                <li className="flex items-start gap-3"><span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-nexus-mint" /> Conversaciones ilimitadas</li>
-                <li className="flex items-start gap-3"><span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-nexus-mint" /> Lead scoring y automatización avanzada</li>
-                <li className="flex items-start gap-3"><span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-nexus-mint" /> Acceso a API y soporte prioritario 24/7</li>
+                <li className="flex items-start gap-3"><span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-nexus-mint shadow-[0_0_8px_#10b981]" /> Conversaciones ilimitadas</li>
+                <li className="flex items-start gap-3"><span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-nexus-mint shadow-[0_0_8px_#10b981]" /> Lead scoring y automatización avanzada</li>
+                <li className="flex items-start gap-3"><span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-nexus-mint shadow-[0_0_8px_#10b981]" /> Acceso a API y soporte prioritario 24/7</li>
               </ul>
             </div>
 
@@ -85,6 +88,32 @@ export function PricingSection() {
             >
               Contactar ventas
             </Link>
+          </div>
+
+          {/* ENTERPRISE */}
+          <div className="rounded-[2rem] border border-white/7 bg-[#0a0a0a] p-8 shadow-[0_18px_70px_rgba(0,0,0,0.22)] md:p-10 flex flex-col justify-between transition-transform duration-500 hover:-translate-y-2">
+            <div>
+              <div className="inline-flex rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-[10px] font-semibold tracking-[0.18em] text-white/60 uppercase">
+                Enterprise
+              </div>
+              <h3 className="mt-5 text-2xl font-semibold text-white md:text-3xl">Infraestructura a medida</h3>
+              <p className="mt-3 text-sm leading-relaxed text-gray-400">
+                Para corporaciones que requieren implementaciones complejas, SLA garantizado y seguridad de grado bancario.
+              </p>
+
+              <ul className="mt-6 space-y-3 text-[13px] leading-relaxed text-white/72">
+                <li className="flex items-start gap-3"><span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-white/50" /> Nubes privadas y Single-Tenant</li>
+                <li className="flex items-start gap-3"><span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-white/50" /> Desarrollo de integraciones a medida</li>
+                <li className="flex items-start gap-3"><span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-white/50" /> Account Manager dedicado y SLA 99.9%</li>
+              </ul>
+            </div>
+
+            <a
+              href="mailto:labsmindware@gmail.com"
+              className="mt-8 inline-flex justify-center rounded-full border border-white/10 bg-white/5 px-6 py-2.5 text-xs font-semibold tracking-[0.14em] text-white uppercase transition-colors hover:border-white/20 hover:bg-white/8"
+            >
+              Hablar con nosotros
+            </a>
           </div>
         </motion.div>
       </div>

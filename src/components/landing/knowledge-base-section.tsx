@@ -36,16 +36,32 @@ function IngestaVisualizer() {
       transition={{ duration: 0.4, ease: [0.23, 1, 0.32, 1] }}
       className="absolute inset-0 flex items-center justify-center"
     >
-      <div className="relative flex h-40 w-32 items-center justify-center rounded-2xl border border-white/20 bg-gradient-to-b from-white/10 to-transparent backdrop-blur-md shadow-2xl">
-        <FileText className="h-10 w-10 text-white/50" strokeWidth={1.5} />
+      <div className="relative flex h-48 w-36 overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-white/5 to-transparent backdrop-blur-xl shadow-[0_20px_40px_-10px_rgba(0,0,0,0.5)]">
+        {/* Subtle top border reflection */}
+        <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/30 to-transparent opacity-50" />
+        
+        {/* Document Content Abstract */}
+        <div className="flex w-full flex-col gap-3 p-5 opacity-40">
+          <div className="h-2 w-1/2 rounded-full bg-white" />
+          <div className="h-1.5 w-full rounded-full bg-white/50" />
+          <div className="h-1.5 w-[90%] rounded-full bg-white/50" />
+          <div className="h-1.5 w-[80%] rounded-full bg-white/50" />
+          <div className="mt-2 h-14 w-full rounded-xl border border-white/20 bg-white/5 flex items-center justify-center">
+            <FileText className="h-5 w-5 text-white/80" strokeWidth={1.5} />
+          </div>
+        </div>
+
+        {/* Premium Scanner */}
         <motion.div 
-          animate={{ top: ['0%', '100%', '0%'] }}
-          transition={{ duration: 3, ease: "linear", repeat: Infinity }}
-          className="absolute left-0 right-0 h-[2px] bg-nexus-lavender shadow-[0_0_15px_#caafff] z-10"
-        />
-        <div className="absolute inset-x-4 top-8 h-1.5 rounded-full bg-white/10" />
-        <div className="absolute inset-x-4 top-14 h-1.5 rounded-full bg-white/10" />
-        <div className="absolute inset-x-4 top-20 w-1/2 h-1.5 rounded-full bg-white/10" />
+          animate={{ top: ['-10%', '110%', '-10%'] }}
+          transition={{ duration: 3.5, ease: "easeInOut", repeat: Infinity }}
+          className="absolute left-0 right-0 z-10 flex flex-col items-center"
+        >
+          {/* Intense center line */}
+          <div className="h-[2px] w-full bg-gradient-to-r from-transparent via-nexus-lavender to-transparent shadow-[0_0_15px_#caafff]" />
+          {/* Trailing scan glow */}
+          <div className="h-12 w-full bg-gradient-to-b from-nexus-lavender/30 to-transparent blur-md transform -translate-y-full" />
+        </motion.div>
       </div>
     </motion.div>
   )
@@ -60,21 +76,30 @@ function RAGVisualizer() {
       transition={{ duration: 0.4, ease: [0.23, 1, 0.32, 1] }}
       className="absolute inset-0 flex items-center justify-center"
     >
-      <div className="grid grid-cols-5 gap-3 lg:gap-5">
-         {Array.from({ length: 25 }).map((_, i) => {
-           const isHighlighted = [7, 11, 12, 13, 17].includes(i);
+      <div className="grid grid-cols-6 gap-3 lg:gap-4 p-6 rounded-[2rem] border border-white/5 bg-white/[0.02] backdrop-blur-xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] relative overflow-hidden">
+         {/* Subtle beam crossing */}
+         <motion.div
+           animate={{ left: ['-100%', '200%'] }}
+           transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}
+           className="absolute top-0 bottom-0 w-[80px] bg-gradient-to-r from-transparent via-white/5 to-transparent skew-x-[-20deg]"
+         />
+
+         {Array.from({ length: 36 }).map((_, i) => {
+           // Highlight a cluster of nodes simulating a "nearest neighbor" vector search
+           const isHighlighted = [14, 15, 20, 21, 22, 27].includes(i);
+           const isQuery = i === 21;
            return (
              <motion.div 
                key={i}
                initial={{ scale: 0, opacity: 0 }}
-               animate={{ scale: 1, opacity: isHighlighted ? [0.4, 1, 0.4] : 0.2 }}
+               animate={{ scale: 1, opacity: isQuery ? 1 : isHighlighted ? [0.3, 0.8, 0.3] : 0.15 }}
                transition={{ 
                  duration: isHighlighted ? 2 : 0.5, 
                  repeat: isHighlighted ? Infinity : 0, 
-                 delay: i * 0.02,
+                 delay: i * 0.01,
                  ease: "easeInOut"
                }}
-               className={`h-1.5 w-1.5 lg:h-2 lg:w-2 rounded-full ${isHighlighted ? 'bg-nexus-lavender shadow-[0_0_10px_#caafff]' : 'bg-white'}`}
+               className={`h-2 w-2 rounded-full ${isQuery ? 'bg-nexus-mint shadow-[0_0_15px_#10b981]' : isHighlighted ? 'bg-nexus-lavender shadow-[0_0_10px_#caafff]' : 'bg-white'}`}
              />
            )
          })}
@@ -84,7 +109,12 @@ function RAGVisualizer() {
 }
 
 function CategoryVisualizer() {
-  const categories = ['Servicios', 'Productos', 'Tarifas', 'FAQs']
+  const categories = [
+    { name: 'Servicios', width: 'w-48', delay: 0 },
+    { name: 'Productos', width: 'w-40', delay: 0.1 },
+    { name: 'Tarifas', width: 'w-32', delay: 0.2 },
+    { name: 'FAQs', width: 'w-24', delay: 0.3 }
+  ]
   return (
     <motion.div 
       initial={{ opacity: 0, scale: 0.95, filter: 'blur(10px)' }}
@@ -93,17 +123,25 @@ function CategoryVisualizer() {
       transition={{ duration: 0.4, ease: [0.23, 1, 0.32, 1] }}
       className="absolute inset-0 flex flex-col gap-3 items-center justify-center"
     >
-      {categories.map((cat, i) => (
+      {categories.map((cat) => (
         <motion.div
-          key={cat}
+          key={cat.name}
           initial={{ x: -20, opacity: 0 }}
           animate={{ x: 0, opacity: 1 }}
-          transition={{ delay: i * 0.1, duration: 0.4, ease: [0.23, 1, 0.32, 1] }}
-          className="flex w-48 items-center gap-3 rounded-xl border border-white/10 bg-white/5 p-3 backdrop-blur-md relative overflow-hidden"
+          transition={{ delay: cat.delay, duration: 0.5, ease: [0.23, 1, 0.32, 1] }}
+          className={`flex ${cat.width} items-center justify-between rounded-xl border border-white/5 bg-gradient-to-r from-white/[0.03] to-transparent p-3 backdrop-blur-md relative overflow-hidden group hover:border-white/10 hover:bg-white/[0.05] transition-all`}
         >
-          <div className="absolute left-0 top-0 bottom-0 w-1 bg-nexus-lavender/50" />
-          <div className="h-1.5 w-1.5 rounded-full bg-nexus-lavender" />
-          <span className="text-sm font-medium text-white/80">{cat}</span>
+          {/* Subtle animated border left */}
+          <div className="absolute left-0 top-0 bottom-0 w-[2px] bg-nexus-lavender/40 group-hover:bg-nexus-lavender transition-colors" />
+          
+          <div className="flex items-center gap-3">
+            <div className="h-1.5 w-1.5 rounded-full bg-nexus-lavender shadow-[0_0_8px_#caafff]" />
+            <span className="text-sm font-medium text-white/80">{cat.name}</span>
+          </div>
+          
+          <div className="h-4 w-4 rounded border border-white/10 flex items-center justify-center bg-black/20">
+            <div className="h-1 w-1 bg-white/30 rounded-full" />
+          </div>
         </motion.div>
       ))}
     </motion.div>
@@ -119,18 +157,24 @@ function ShieldVisualizer() {
       transition={{ duration: 0.4, ease: [0.23, 1, 0.32, 1] }}
       className="absolute inset-0 flex items-center justify-center"
     >
-      <div className="relative flex h-32 w-32 items-center justify-center rounded-full border border-nexus-lavender/30 bg-gradient-to-br from-nexus-lavender/20 to-transparent backdrop-blur-md">
+      <div className="relative flex h-32 w-32 items-center justify-center rounded-full border border-white/10 bg-gradient-to-br from-white/5 to-transparent backdrop-blur-xl shadow-2xl">
+        <div className="absolute inset-0 rounded-full border-t border-white/20" />
+        
         <motion.div
-          animate={{ scale: [1, 1.3, 1], opacity: [0.3, 0, 0.3] }}
-          transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute inset-0 rounded-full border border-nexus-lavender"
+          animate={{ scale: [1, 1.4, 1], opacity: [0.5, 0, 0.5] }}
+          transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute inset-0 rounded-full border border-nexus-lavender/50"
         />
         <motion.div
-          animate={{ scale: [1, 1.5, 1], opacity: [0.1, 0, 0.1] }}
-          transition={{ duration: 2.5, delay: 0.5, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute inset-0 rounded-full border border-nexus-lavender"
+          animate={{ scale: [1, 1.8, 1], opacity: [0.2, 0, 0.2] }}
+          transition={{ duration: 3, delay: 0.5, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute inset-0 rounded-full border border-nexus-lavender/30"
         />
-        <MessageSquareWarning className="h-8 w-8 text-nexus-lavender" strokeWidth={1.5} />
+        
+        {/* Core Shield */}
+        <div className="relative flex h-14 w-14 items-center justify-center rounded-full bg-nexus-lavender/20 border border-nexus-lavender/30 shadow-[0_0_30px_rgba(202,175,255,0.4)]">
+           <MessageSquareWarning className="h-6 w-6 text-nexus-lavender drop-shadow-[0_0_8px_rgba(202,175,255,0.8)]" strokeWidth={1.5} />
+        </div>
       </div>
     </motion.div>
   )
