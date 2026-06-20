@@ -35,7 +35,6 @@ const TIMELINE = [
   { at: 8800,  action: 'typing' },
   { at: 9800,  action: 'show',   idx: 5 },
   { at: 11400, action: 'show',   idx: 6, score: 95, unlock: ['urgency'] },
-  { at: 16000, action: 'reset' },
 ] as const
 
 // ─── Score count-up hook ───────────────────────────────────────────────────────
@@ -71,8 +70,7 @@ function useCountUp(target: number, duration = 700) {
 export function LeadScoringSection() {
   const sectionRef    = useRef<HTMLDivElement>(null)
   const chatScrollRef = useRef<HTMLDivElement>(null)
-  const isInView      = useInView(sectionRef, { once: false, margin: '-100px' })
-  const [iteration, setIteration] = useState(0)
+  const isInView = useInView(sectionRef, { once: true, margin: '-100px' })
 
   const [visibleMessages,  setVisibleMessages]  = useState<number[]>([])
   const [isTyping,         setIsTyping]          = useState(false)
@@ -114,13 +112,11 @@ export function LeadScoringSection() {
         }, e.at))
       } else if (event.action === 'typing') {
         timers.push(setTimeout(() => setIsTyping(true), event.at))
-      } else if (event.action === 'reset') {
-        timers.push(setTimeout(() => setIteration(n => n + 1), event.at))
       }
     }
     return () => timers.forEach(clearTimeout)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isInView, iteration])
+  }, [isInView])
 
   return (
     <section

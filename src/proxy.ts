@@ -1,130 +1,103 @@
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server'
 
-const BACKEND = process.env.BACKEND_URL ?? process.env.NEXT_PUBLIC_BACKEND_URL;
+const BACKEND = process.env.BACKEND_URL ?? process.env.NEXT_PUBLIC_BACKEND_URL ?? ''
 
-const AUTH_PAGES = ['/login', '/forgot-password', '/reset-password'];
+const COOKIE_ACCESS   = 'nx_access'
+const COOKIE_REFRESH  = 'nx_token'
+const COOKIE_USER     = 'nx_user'
 
-export async function proxy(request: NextRequest) {
-  const { pathname } = request.nextUrl;
+const COOKIE_OPTS = {
+  httpOnly: true,
+  secure:   process.env.NODE_ENV === 'production',
+  sameSite: 'lax' as const,
+  path:     '/',
+  maxAge:   8 * 60 * 60,
+} as const
 
-  // ── Widget: validar CSP frame-ancestors contra config del backend ──────
-  const widgetMatch = pathname.match(/^\/widget\/([^/]+)$/);
-  if (widgetMatch) {
-    const res = NextResponse.next();
-    if (!BACKEND) {
-      res.headers.set('Content-Security-Policy', "frame-ancestors 'none'");
-      return res;
+/** Decode a JWT payload and check the `exp` claim.
+ *  Returns true if the token is missing, malformed, or already expired.
+ *  Adds a 10-second buffer so we refresh slightly before actual expiry. */
+function isExpired(token: string | undefined): boolean {
+  if (!token) return true
+  try {
+    const raw    = token.split('.')[1]
+    const padded = raw + '='.repeat((4 - (raw.length % 4)) % 4)
+    const b64    = padded.replace(/-/g, '+').replace(/_/g, '/')
+    const payload: { exp?: number } = JSON.parse(atob(b64))
+    if (typeof payload.exp !== 'number') return true
+    return payload.exp < Date.now() / 1000 + 10 // 10s early buffer
+  } catch {
+    return true
+  }
+}
+
+export async function middleware(req: NextRequest) {
+  const { pathname } = req.nextUrl
+
+  const accessToken  = req.cookies.get(COOKIE_ACCESS)?.value
+  const refreshToken = req.cookies.get(COOKIE_REFRESH)?.value
+  const userCookie   = req.cookies.get(COOKIE_USER)?.value
+
+  // ── /login: redirect to home if already authenticated ──────────────────────
+  if (pathname.startsWith('/login')) {
+    if (refreshToken && userCookie && !isExpired(accessToken)) {
+      try {
+        const raw   = userCookie
+        const padded = raw + '='.repeat((4 - (raw.length % 4)) % 4)
+        const user: { role?: string } = JSON.parse(atob(padded))
+        const dest = user.role === 'owner' ? '/dashboard' : '/panel'
+        return NextResponse.redirect(new URL(dest, req.url))
+      } catch { /* fall through to login page */ }
     }
-    try {
-      const backendRes = await fetch(
-        `${BACKEND}/bot/widget/${widgetMatch[1]}/config`,
-        { cache: 'no-store' },
-      );
-      if (backendRes.ok) {
-        const cfg = await backendRes.json();
-        const origin = (cfg.websiteUrl as string | undefined)?.trim();
-        res.headers.set(
-          'Content-Security-Policy',
-          `frame-ancestors ${origin ? `'self' ${origin}` : "'none'"}`,
-        );
-      } else {
-        res.headers.set('Content-Security-Policy', "frame-ancestors 'none'");
-      }
-    } catch {
-      // Error de red: no bloquear el widget.
-    }
-    return res;
+    return NextResponse.next()
   }
 
-  // ── Leer y decodificar tokens ─────────────────────────────────────────
-  const refreshToken = request.cookies.get('nx_token')?.value ?? null;
-  const accessToken  = request.cookies.get('nx_access')?.value ?? null;
+  // ── Protected routes (/dashboard, /panel) ──────────────────────────────────
 
-  let role: string | null = null;
-  let sessionExpired = false;
-
-  if (refreshToken) {
-    try {
-      const payloadPart = refreshToken.split('.')[1];
-      if (payloadPart) {
-        const base64 = payloadPart.replace(/-/g, '+').replace(/_/g, '/');
-        const padded  = base64 + '='.repeat((4 - (base64.length % 4)) % 4);
-        const payload = JSON.parse(atob(padded)) as { exp?: number };
-        if (payload.exp && Date.now() >= payload.exp * 1000) {
-          sessionExpired = true;
-        }
-      }
-    } catch {
-      sessionExpired = true;
-    }
+  // No session at all → go to login
+  if (!refreshToken || !userCookie) {
+    return redirectToLogin(req)
   }
 
-  // El role viaja en el access token (sub, email, role, tenantId, type:"access")
-  if (accessToken && !sessionExpired) {
-    try {
-      const payloadPart = accessToken.split('.')[1];
-      if (payloadPart) {
-        const base64 = payloadPart.replace(/-/g, '+').replace(/_/g, '/');
-        const padded  = base64 + '='.repeat((4 - (base64.length % 4)) % 4);
-        const payload = JSON.parse(atob(padded)) as { role?: string };
-        role = payload.role ?? null;
-      }
-    } catch {
-      role = null;
-    }
+  // Access token still valid → fast path, no network call needed
+  if (!isExpired(accessToken)) {
+    return NextResponse.next()
   }
 
-  // Si el access token expiró pero el refresh no, leer el role desde nx_user
-  // (el refresh token no lleva role en el payload)
-  if (!role && refreshToken && !sessionExpired) {
-    try {
-      const raw = request.cookies.get('nx_user')?.value;
-      if (raw) {
-        const user = JSON.parse(atob(raw)) as { role?: string };
-        role = user.role ?? null;
-      }
-    } catch {
-      role = null;
-    }
+  // Access token expired → attempt silent refresh
+  try {
+    const refreshRes = await fetch(`${BACKEND}/auth/refresh`, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ refreshToken }),
+      cache:   'no-store',
+    })
+
+    if (!refreshRes.ok) throw new Error(`refresh ${refreshRes.status}`)
+
+    const { accessToken: newToken } = await refreshRes.json()
+    if (typeof newToken !== 'string') throw new Error('no token in refresh response')
+
+    // Continue the request with the new access token set in the response cookie
+    const response = NextResponse.next()
+    response.cookies.set(COOKIE_ACCESS, newToken, COOKIE_OPTS)
+    return response
+  } catch {
+    // Refresh token invalid / network error → wipe cookies and go to login
+    return redirectToLogin(req, true)
   }
+}
 
-  const isAuthenticated = !!refreshToken && !sessionExpired;
-
-  // ── Sesión expirada fuera de páginas públicas: limpiar y redirigir ────
-  if (sessionExpired && !AUTH_PAGES.includes(pathname)) {
-    const loginUrl = new URL('/login', request.url);
-    const res = NextResponse.redirect(loginUrl);
-    res.cookies.delete('nx_token');
-    res.cookies.delete('nx_user');
-    res.cookies.delete('nx_access');
-    return res;
+function redirectToLogin(req: NextRequest, clearCookies = false): NextResponse {
+  const res = NextResponse.redirect(new URL('/login', req.url))
+  if (clearCookies) {
+    res.cookies.delete(COOKIE_ACCESS)
+    res.cookies.delete(COOKIE_REFRESH)
+    res.cookies.delete(COOKIE_USER)
   }
-
-  // ── Rutas protegidas sin sesión ───────────────────────────────────────
-  if (!isAuthenticated && (pathname.startsWith('/dashboard') || pathname.startsWith('/panel'))) {
-    return NextResponse.redirect(new URL('/login', request.url));
-  }
-
-  // ── Con sesión válida fuera de páginas auth ───────────────────────────
-  if (isAuthenticated && AUTH_PAGES.includes(pathname)) {
-    const dest = role === 'customer' ? '/panel' : '/dashboard';
-    return NextResponse.redirect(new URL(dest, request.url));
-  }
-
-  // ── Control de acceso por rol ─────────────────────────────────────────
-  if (isAuthenticated && role) {
-    if (pathname.startsWith('/dashboard') && role !== 'owner') {
-      return NextResponse.redirect(new URL('/panel', request.url));
-    }
-    if (pathname.startsWith('/panel') && role !== 'customer') {
-      return NextResponse.redirect(new URL('/dashboard', request.url));
-    }
-  }
-
-  return NextResponse.next();
+  return res
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|api/).*)'],
-};
+  matcher: ['/dashboard/:path*', '/panel/:path*', '/login'],
+}

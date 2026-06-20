@@ -9,13 +9,11 @@ import { LeadScoringSection } from '@/components/landing/lead-scoring-section'
 import { PricingSection } from '@/components/landing/pricing-section'
 import { CtaSection } from '@/components/landing/cta-section'
 import { SiteFooter } from '@/components/landing/site-footer'
-import { LoadingScreen } from '@/components/landing/loading-screen'
 
 export default function Home() {
   return (
     <div className="relative overflow-clip bg-black font-[family-name:var(--font-geist-sans)] text-white selection:bg-nexus-lavender selection:text-black">
-      <LoadingScreen />
-      <ScrollProgress />
+<ScrollProgress />
       <Navbar />
       <Hero />
       <StepsSection />
@@ -33,7 +31,7 @@ export default function Home() {
           var panelOpen = false;
           var iframe = document.createElement("iframe");
           iframe.id = iframeId;
-          iframe.src = "http://localhost:3000/widget/nxbot_1957644b814ddb7ac1d5?embedded=1";
+          iframe.src = "https://nexus-frontend-xi-blue.vercel.app/widget/nxbot_1957644b814ddb7ac1d5?embedded=1";
           iframe.style.position = "fixed";
           iframe.style.bottom = "88px";
           iframe.style.right = "24px";
@@ -46,7 +44,7 @@ export default function Home() {
           iframe.style.boxShadow = "0 24px 64px rgba(0,0,0,0.22)";
           iframe.style.display = "none";
           iframe.style.zIndex = "999998";
-          iframe.setAttribute("title", "Chat de Asistente Nexus");
+          iframe.setAttribute("title", "Chat de Mindware Nexus");
 
           var button = document.createElement("button");
           button.id = buttonId;
@@ -59,7 +57,7 @@ export default function Home() {
           button.style.border = "0";
           button.style.borderRadius = "999px";
           button.style.padding = "14px 18px";
-          button.style.background = "#6D28D9";
+          button.style.background = "#7C3AED";
           button.style.color = "#FFFFFF";
           button.style.font = "600 14px system-ui, sans-serif";
           button.style.boxShadow = "0 12px 30px rgba(0,0,0,0.18)";
