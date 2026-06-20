@@ -28,11 +28,13 @@ import { PreviewDialog, WidgetPreviewDialog } from './_dialogs'
 export function BotConfigForm({
   config,
   customerId,
+  botId,
   availableModels = [],
   mode = 'owner',
 }: {
   config: BotConfig
   customerId: number
+  botId?: number
   availableModels?: AvailableModel[]
   /** 'customer' hides IA model fields and uses customer-scoped actions */
   mode?: 'owner' | 'customer'
@@ -100,9 +102,10 @@ export function BotConfigForm({
         widgetPosition, launcherText, welcomeMessage, fallbackMessage, websiteUrl,
         scoringThreshold, scoringRubric,
       }
+      const effectiveBotId = botId ?? config.botId
       const result = mode === 'customer'
-        ? await saveCustomerBotConfigAction(sharedPayload)
-        : await updateBotConfigAction(customerId, { ...sharedPayload, llmProvider, llmModel, temperature, maxTokens })
+        ? await saveCustomerBotConfigAction(sharedPayload, effectiveBotId)
+        : await updateBotConfigAction(customerId, effectiveBotId, { ...sharedPayload, llmProvider, llmModel, temperature, maxTokens })
       setSaveStatus(result.status === 'success' ? 'success' : 'error')
       setSaveMsg(result.status === 'error' ? result.message : '')
       if (result.status === 'success') setTimeout(() => setSaveStatus('idle'), 3000)
@@ -119,8 +122,9 @@ export function BotConfigForm({
   }
 
   function handleToggle() {
+    const effectiveBotId = botId ?? config.botId
     startToggle(async () => {
-      await toggleBotActiveAction(customerId, !isBotActive)
+      await toggleBotActiveAction(customerId, effectiveBotId, !isBotActive)
       setIsBotActive((v) => !v)
     })
   }
@@ -169,7 +173,7 @@ export function BotConfigForm({
           <span className="text-xs text-muted-foreground font-mono">{config.clientId}</span>
         </div>
         <div className="flex items-center gap-2">
-          <PreviewDialog customerId={customerId} />
+          <PreviewDialog customerId={customerId} botId={botId ?? config.botId} />
           {mode === 'owner' && (
             <Button
               type="button" variant="outline" size="sm"
@@ -177,8 +181,8 @@ export function BotConfigForm({
               className={isBotActive ? 'text-destructive hover:text-destructive' : ''}
             >
               {isBotActive
-                ? <><PowerOff className="mr-1.5 size-3.5" />Desactivar (BOT-26)</>
-                : <><Power className="mr-1.5 size-3.5" />Activar (BOT-26)</>}
+                ? <><PowerOff className="mr-1.5 size-3.5" />Desactivar</>
+                : <><Power className="mr-1.5 size-3.5" />Activar</>}
             </Button>
           )}
           <Button
@@ -216,11 +220,11 @@ export function BotConfigForm({
 
       {/* BOT-01/02/24: Identidad */}
       <Section id="identidad" title="Identidad del asistente">
-        <Field label="BOT-01 · Nombre del asistente">
+        <Field label="Nombre del asistente">
           <Input value={assistantName} onChange={(e) => setAssistantName(e.target.value)} maxLength={80} placeholder="Nexus" />
         </Field>
 
-        <Field label="BOT-02 · Avatar">
+        <Field label="Avatar">
           <AvatarPickerField
             mode={avatarMode}
             value={avatarValue}
@@ -231,14 +235,14 @@ export function BotConfigForm({
           />
         </Field>
 
-        <Field label="BOT-24 · Mensaje de bienvenida" hint="Se muestra al abrir el widget por primera vez.">
+        <Field label="Mensaje de bienvenida" hint="Se muestra al abrir el widget por primera vez.">
           <Input value={welcomeMessage} onChange={(e) => setWelcomeMessage(e.target.value)} maxLength={500} placeholder="Hola, ¿en qué puedo ayudarte hoy?" />
         </Field>
       </Section>
 
       {/* BOT-03/04/06/07/09: Modelo */}
       <Section id="modelo" title="Comportamiento del modelo" hint={mode === 'owner' ? "BOT-08: Las API keys son gestionadas centralmente por Owners y nunca se exponen al cliente." : undefined}>
-        <Field label="BOT-03 · Idiomas soportados" hint="Selecciona uno o más idiomas en los que el asistente responderá.">
+        <Field label="Idiomas soportados" hint="Selecciona uno o más idiomas en los que el asistente responderá.">
           <div className="flex flex-wrap gap-2">
             {SUPPORTED_LANGUAGES.map((lang) => {
               const active = supportedLanguages.includes(lang.value)
@@ -267,7 +271,7 @@ export function BotConfigForm({
           )}
         </Field>
 
-        <Field label="BOT-04 · Tono de conversación">
+        <Field label="Tono de conversación">
           <Select value={tone} onValueChange={(v) => setTone(v as typeof tone)}>
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
@@ -342,7 +346,7 @@ export function BotConfigForm({
 
         {mode !== 'customer' && (
           <div className="grid grid-cols-2 gap-4">
-            <Field label="BOT-06 · Temperatura / creatividad" hint={`Valor actual: ${temperature}`}>
+            <Field label="Temperatura / creatividad" hint={`Valor actual: ${temperature}`}>
               <Select value={String(temperature)} onValueChange={(v) => setTemperature(Number(v))}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -355,13 +359,13 @@ export function BotConfigForm({
                 </SelectContent>
               </Select>
             </Field>
-            <Field label="BOT-07 · Máximo de tokens por respuesta">
+            <Field label="Máximo de tokens por respuesta">
               <Input type="number" min={64} step={64} value={maxTokens} onChange={(e) => setMaxTokens(Number(e.target.value))} />
             </Field>
           </div>
         )}
 
-        <Field label="BOT-09 · System prompt del chatbot">
+        <Field label="System prompt del chatbot">
           <textarea
             value={systemPromptHtml}
             onChange={(e) => setSystemPromptHtml(e.target.value)}
@@ -373,12 +377,12 @@ export function BotConfigForm({
       </Section>
 
       {/* BOT-10: Productos */}
-      <Section id="productos" title="BOT-10 · Catálogo de productos y servicios">
+      <Section id="productos" title="Catálogo de productos y servicios">
         <ProductsList items={productsServices} onChange={setProductsServices} />
       </Section>
 
       {/* BOT-11: Reglas */}
-      <Section id="reglas" title="BOT-11 · Reglas de negocio y lógica de recomendación">
+      <Section id="reglas" title="Reglas de negocio y lógica de recomendación">
         <RulesList
           items={businessRules} onChange={setBusinessRules}
           addLabel="Agregar regla de negocio"
@@ -388,18 +392,18 @@ export function BotConfigForm({
       </Section>
 
       {/* BOT-12: Precios */}
-      <Section id="precios" title="BOT-12 · Rangos de precios por tipo de solución">
+      <Section id="precios" title="Rangos de precios por tipo de solución">
         <PricingList items={pricingRules} onChange={setPricingRules} />
       </Section>
 
       {/* BOT-13: Diagnóstico */}
-      <Section id="diagnostico" title="BOT-13 · Preguntas diagnósticas clave">
+      <Section id="diagnostico" title="Preguntas diagnósticas clave">
         <QuestionsList items={diagnosticQuestions} onChange={setDiagnosticQuestions} />
       </Section>
 
       {/* BOT-15/16/17: Captura de leads */}
       <Section id="leads" title="Captura de leads">
-        <Field label="BOT-15 · Momento para solicitar datos de contacto">
+        <Field label="Momento para solicitar datos de contacto">
           <Select value={leadCaptureMoment} onValueChange={(v) => setLeadCaptureMoment(v as typeof leadCaptureMoment)}>
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
@@ -411,7 +415,7 @@ export function BotConfigForm({
           </Select>
         </Field>
 
-        <Field label="BOT-16 · Campos de contacto solicitados al usuario final">
+        <Field label="Campos de contacto solicitados al usuario final">
           <div className="rounded-lg border overflow-hidden">
             <table className="w-full text-sm">
               <thead className="bg-muted/50 text-xs text-muted-foreground">
@@ -477,7 +481,7 @@ export function BotConfigForm({
           </Button>
         </Field>
 
-        <Field label="BOT-17 · Emails de destino de notificaciones de captura de lead" hint="Escribe un email y presiona Enter.">
+        <Field label="Emails de destino de notificaciones de captura de lead" hint="Escribe un email y presiona Enter.">
           <TagInput values={notificationEmails} onChange={setNotificationEmails} placeholder="equipo@empresa.com" type="email" />
         </Field>
       </Section>
@@ -560,7 +564,7 @@ export function BotConfigForm({
 
       {/* BOT-18/25: Mensajes */}
       <Section id="mensajes" title="Mensajes del bot">
-        <Field label="BOT-18 · Mensaje de cierre / despedida">
+        <Field label="Mensaje de cierre / despedida">
           <textarea
             value={closingMessage} onChange={(e) => setClosingMessage(e.target.value)}
             maxLength={1200} rows={3}
@@ -568,19 +572,19 @@ export function BotConfigForm({
             className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs outline-none resize-y focus:border-ring focus:ring-3 focus:ring-ring/50 dark:bg-input/30"
           />
         </Field>
-        <Field label="BOT-25 · Mensaje de fallback" hint="Cuando el bot no tiene información suficiente para responder.">
+        <Field label="Mensaje de fallback" hint="Cuando el bot no tiene información suficiente para responder.">
           <Input value={fallbackMessage} onChange={(e) => setFallbackMessage(e.target.value)} maxLength={500} placeholder="Lo siento, no tengo información suficiente para responder eso." />
         </Field>
       </Section>
 
       {/* BOT-20/21/22: Apariencia */}
       <Section id="widget" title="Apariencia del widget">
-        <Field label="BOT-20 · Color primario del widget" hint="Aparece en el botón de apertura y los elementos destacados del chat.">
+        <Field label="Color primario del widget" hint="Aparece en el botón de apertura y los elementos destacados del chat.">
           <ColorPickerField value={widgetPrimaryColor} onChange={setWidgetPrimaryColor} />
         </Field>
 
         <div className="grid grid-cols-2 gap-4">
-          <Field label="BOT-21 · Posición del widget">
+          <Field label="Posición del widget">
             <Select value={widgetPosition} onValueChange={(v) => setWidgetPosition(v as typeof widgetPosition)}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
@@ -589,7 +593,7 @@ export function BotConfigForm({
               </SelectContent>
             </Select>
           </Field>
-          <Field label="BOT-22 · Texto del botón de apertura">
+          <Field label="Texto del botón de apertura">
             <Input value={launcherText} onChange={(e) => setLauncherText(e.target.value)} maxLength={40} placeholder="💬 Chatea con nosotros" />
           </Field>
         </div>
@@ -608,14 +612,14 @@ export function BotConfigForm({
             <div className="flex items-center gap-3 rounded-lg bg-muted/40 px-3 py-2.5">
               <Bot className="size-4 shrink-0 text-muted-foreground" />
               <div className="min-w-0 flex-1">
-                <p className="text-xs text-muted-foreground">BOT-23 · Client ID único</p>
+                <p className="text-xs text-muted-foreground">Client ID único</p>
                 <p className="font-mono text-sm text-foreground">{config.clientId}</p>
               </div>
             </div>
 
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <p className="text-xs text-muted-foreground">BOT-19 · Snippet HTML/JS para incrustar en el sitio del cliente</p>
+                <p className="text-xs text-muted-foreground">Snippet HTML/JS para incrustar en el sitio del cliente</p>
                 <Button type="button" variant="outline" size="sm" onClick={copySnippet}>
                   {copied
                     ? <><CheckCircle2 className="mr-1.5 size-3.5 text-green-500" />Copiado</>

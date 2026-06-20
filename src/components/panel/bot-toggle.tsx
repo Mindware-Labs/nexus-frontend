@@ -7,9 +7,11 @@ import { toggleBotAction } from '@/app/actions/customer'
 export function BotToggle({
   active,
   effective,
+  onToggle: toggleAction,
 }: {
   active: boolean
   effective?: boolean
+  onToggle?: (active: boolean) => Promise<void>
 }) {
   const [isActive, setIsActive] = useState(active)
   const [error, setError] = useState<string | null>(null)
@@ -21,7 +23,7 @@ export function BotToggle({
     setIsActive(next)
     startTransition(async () => {
       try {
-        await toggleBotAction(next)
+        await (toggleAction ? toggleAction(next) : toggleBotAction(next))
       } catch (e) {
         setIsActive(!next)
         setError(e instanceof Error ? e.message : 'Error al cambiar el estado')

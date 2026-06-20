@@ -121,6 +121,8 @@ export interface AnalyticsData {
 }
 
 export interface CustomerBotConfig {
+  botId: number
+  botName: string
   customerId: number
   clientId: string
   assistantName: string
@@ -237,6 +239,40 @@ export async function getPlan(): Promise<PlanInfo> {
 }
 
 // ── Chatbot (CUS-07..12) ───────────────────────────────────────────────────
+
+export interface CustomerBotSummary {
+  id: number
+  name: string
+  clientId: string
+  isBotActive: boolean
+  widgetUrl: string
+}
+
+export async function listCustomerBots(): Promise<CustomerBotSummary[]> {
+  return getJson<CustomerBotSummary[]>('/customer/bots', 'No se pudieron cargar los bots')
+}
+
+export async function createCustomerBotAction(name: string): Promise<{ status: 'success' | 'error'; message?: string }> {
+  const res = await backendFetch('/customer/bots', { method: 'POST', body: JSON.stringify({ name }) })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({})) as Record<string, unknown>
+    const msg = Array.isArray(err.message) ? (err.message as string[]).join(', ') : String(err.message ?? 'Error')
+    return { status: 'error', message: msg }
+  }
+  revalidatePath('/panel/chatbot')
+  return { status: 'success' }
+}
+
+export async function getCustomerBotConfig(botId: number): Promise<CustomerBotConfig> {
+  return getJson<CustomerBotConfig>(`/customer/bots/${botId}/config`, 'No se pudo cargar la configuración')
+}
+
+export async function toggleCustomerBotAction(botId: number, active: boolean): Promise<void> {
+  await mutate(`/customer/bots/${botId}/toggle?active=${active}`, { method: 'PATCH' }, 'No se pudo cambiar el estado del bot')
+  revalidatePath('/panel')
+  revalidatePath('/panel/chatbot')
+}
+
 export async function getBotConfig(): Promise<CustomerBotConfig> {
   return getJson<CustomerBotConfig>('/customer/bot/config', 'No se pudo cargar la configuración')
 }
@@ -440,10 +476,12 @@ export type BotActionState =
 
 export async function saveCustomerBotConfigAction(
   payload: Record<string, unknown>,
+  botId?: number,
 ): Promise<BotActionState> {
+  const url = botId ? `/customer/bots/${botId}/presentation` : '/customer/bot/presentation'
   let res: Response
   try {
-    res = await backendFetch('/customer/bot/presentation', {
+    res = await backendFetch(url, {
       method: 'PATCH',
       body: JSON.stringify(payload),
     })

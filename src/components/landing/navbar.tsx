@@ -77,9 +77,11 @@ export function Navbar() {
             : 'border-white/6 bg-black/25 backdrop-blur-xl'
         }`}
       >
-        <Link href="/" className="text-sm font-semibold tracking-[0.22em] text-white uppercase">
-          Nexus
-        </Link>
+        <div className="flex flex-1 items-center">
+          <Link href="/" className="text-sm font-semibold tracking-[0.22em] text-white uppercase">
+            Nexus
+          </Link>
+        </div>
 
         <div className="hidden items-center gap-7 text-sm text-white/60 md:flex">
           <a href="#how-it-works" onClick={(e) => handleNavClick(e, '#how-it-works')} className="transition-colors hover:text-white">Flujo</a>
@@ -89,7 +91,7 @@ export function Navbar() {
           <a href="#pricing" onClick={(e) => handleNavClick(e, '#pricing')} className="transition-colors hover:text-white">Planes</a>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-1 items-center justify-end gap-3">
           <Link
             href="/login"
             className="hidden text-sm font-medium text-white/65 transition-colors hover:text-white md:block"

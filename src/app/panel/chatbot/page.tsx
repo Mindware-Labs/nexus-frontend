@@ -1,55 +1,25 @@
 import { redirect } from 'next/navigation'
-import { AlertCircle, Bot, Code2, Eye, Power } from 'lucide-react'
+import { AlertCircle, Bot } from 'lucide-react'
 import { getSessionUser } from '@/lib/session'
-import { getBotConfig, type CustomerBotConfig } from '@/app/actions/customer'
-import { BotToggle } from '@/components/panel/bot-toggle'
-import { ChatbotPreview } from '@/components/panel/chatbot-preview'
-import { CopySnippet, InstallInstructions } from '@/components/panel/copy-snippet'
-import { BotConfigForm } from '@/app/dashboard/bots/[customerId]/bot-config-form'
-import type { BotConfig } from '@/app/actions/bot'
+import { listCustomerBots, createCustomerBotAction, type CustomerBotSummary } from '@/app/actions/customer'
+import { Badge } from '@/components/ui/badge'
+import { CreateCustomerBotButton } from './_bot-list-actions'
+import Link from 'next/link'
+import { Button } from '@/components/ui/button'
 
-export const metadata = { title: 'Mi Chatbot — Mindware Nexus' }
-
-function Section({
-  icon,
-  title,
-  desc,
-  children,
-}: {
-  icon: React.ReactNode
-  title: string
-  desc?: string
-  children: React.ReactNode
-}) {
-  return (
-    <div className="rounded-xl border bg-card">
-      <div className="border-b px-5 py-4">
-        <h2 className="flex items-center gap-2 text-sm font-semibold">
-          <span className="text-nexus-purple">{icon}</span>
-          {title}
-        </h2>
-        {desc && <p className="mt-0.5 text-xs text-muted-foreground">{desc}</p>}
-      </div>
-      <div className="p-5">{children}</div>
-    </div>
-  )
-}
-
-function toFormConfig(c: CustomerBotConfig): BotConfig {
-  return c as unknown as BotConfig
-}
+export const metadata = { title: 'Mis Chatbots — Mindware Nexus' }
 
 export default async function ChatbotPage() {
   const user = await getSessionUser()
   if (!user || user.role !== 'customer') redirect('/login')
 
-  let config: CustomerBotConfig | null = null
+  let bots: CustomerBotSummary[] = []
   let loadError: string | null = null
   try {
-    config = await getBotConfig()
+    bots = await listCustomerBots()
   } catch (e) {
-    if (e instanceof Error && (e.message === 'NEXT_REDIRECT' || 'digest' in e)) throw e
-    loadError = e instanceof Error ? e.message : 'No se pudo cargar la configuración'
+    if (e instanceof Error && ('digest' in e || e.message === 'NEXT_REDIRECT')) throw e
+    loadError = e instanceof Error ? e.message : 'No se pudieron cargar los bots'
   }
 
   return (
@@ -58,17 +28,11 @@ export default async function ChatbotPage() {
         <div>
           <h1 className="flex items-center gap-2 text-xl font-semibold text-foreground">
             <Bot className="size-5 text-nexus-purple" />
-            Mi Chatbot
+            Mis Chatbots
           </h1>
-          <p className="mt-0.5 text-sm text-muted-foreground">Configura tu asistente e instálalo en tu sitio</p>
+          <p className="mt-0.5 text-sm text-muted-foreground">Gestiona y configura tus asistentes</p>
         </div>
-        {config && (
-          <div className="flex items-center gap-2 rounded-xl border bg-card px-4 py-2.5">
-            <Power className="size-4 text-muted-foreground" />
-            <span className="text-sm text-muted-foreground">Estado</span>
-            <BotToggle active={config.isBotActive} effective={config.isBotActiveEffective} />
-          </div>
-        )}
+        <CreateCustomerBotButton action={createCustomerBotAction} />
       </div>
 
       {loadError && (
@@ -78,41 +42,33 @@ export default async function ChatbotPage() {
         </div>
       )}
 
-      {config && (
-        <div className="grid gap-6 xl:grid-cols-[1fr_360px]">
-          {/* Columna principal: configuración completa */}
-          <BotConfigForm
-            config={toFormConfig(config)}
-            customerId={config.customerId}
-            mode="customer"
-          />
-
-          {/* Columna lateral: preview + instalación */}
-          <div className="space-y-6">
-            <Section icon={<Eye className="size-4" />} title="Vista previa" desc="Prueba tu chatbot con la configuración actual">
-              <ChatbotPreview
-                assistantName={config.assistantName}
-                welcomeMessage={config.welcomeMessage}
-                primaryColor={config.widgetPrimaryColor}
-              />
-            </Section>
-
-            <Section icon={<Code2 className="size-4" />} title="Código de instalación" desc="Pega este snippet en tu sitio web">
-              <CopySnippet snippet={config.snippet} />
-              <p className="mt-3 text-xs text-muted-foreground">
-                URL directa del widget:{' '}
-                <a href={config.widgetUrl} target="_blank" rel="noreferrer" className="text-nexus-purple hover:underline">
-                  {config.widgetUrl}
-                </a>
-              </p>
-            </Section>
-
-            <Section icon={<Code2 className="size-4" />} title="Instrucciones de instalación">
-              <InstallInstructions />
-            </Section>
-          </div>
+      {bots.length === 0 && !loadError && (
+        <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed py-16 text-muted-foreground">
+          <Bot className="size-10 opacity-30" />
+          <p className="text-sm">Aún no tienes bots configurados.</p>
+          <CreateCustomerBotButton action={createCustomerBotAction} variant="outline" />
         </div>
       )}
+
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {bots.map((bot) => (
+          <div key={bot.id} className="flex flex-col gap-3 rounded-xl border bg-card p-4">
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <Bot className="size-4 shrink-0 text-nexus-purple" />
+                <span className="font-medium text-sm truncate">{bot.name}</span>
+              </div>
+              <Badge variant={bot.isBotActive ? 'default' : 'secondary'} className="shrink-0 text-xs">
+                {bot.isBotActive ? 'Activo' : 'Inactivo'}
+              </Badge>
+            </div>
+            <p className="text-xs text-muted-foreground font-mono truncate">{bot.clientId}</p>
+            <Button asChild size="sm" className="mt-auto">
+              <Link href={`/panel/chatbot/${bot.id}`}>Configurar</Link>
+            </Button>
+          </div>
+        ))}
+      </div>
     </div>
   )
 }

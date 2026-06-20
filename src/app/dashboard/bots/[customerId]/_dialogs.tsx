@@ -17,7 +17,7 @@ import { previewBotChatAction } from '@/app/actions/bot'
 
 type ChatMessage = { role: 'user' | 'bot'; text: string }
 
-export function PreviewDialog({ customerId }: { customerId: number }) {
+export function PreviewDialog({ customerId, botId }: { customerId: number; botId: number }) {
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [draft, setDraft] = useState('')
   const [sending, setSending] = useState(false)
@@ -30,7 +30,7 @@ export function PreviewDialog({ customerId }: { customerId: number }) {
     setMessages(next)
     setDraft('')
     setSending(true)
-    const result = await previewBotChatAction(customerId, text, messages)
+    const result = await previewBotChatAction(customerId, botId, text, messages)
     if ('error' in result) {
       setMessages([...next, { role: 'bot', text: `Error: ${result.error}` }])
     } else {
@@ -45,7 +45,7 @@ export function PreviewDialog({ customerId }: { customerId: number }) {
       <DialogTrigger asChild>
         <Button variant="outline" size="sm">
           <MessageSquare className="mr-1.5 size-3.5" />
-          Probar bot (BOT-14)
+          Probar bot
         </Button>
       </DialogTrigger>
       <DialogContent className="flex h-[600px] max-w-lg flex-col gap-0 p-0">

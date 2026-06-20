@@ -1,3 +1,4 @@
+import Script from 'next/script'
 import { ScrollProgress } from '@/components/landing/anim'
 import { Navbar } from '@/components/landing/navbar'
 import { Hero } from '@/components/landing/hero'
@@ -18,12 +19,61 @@ export default function Home() {
       <Navbar />
       <Hero />
       <StepsSection />
+      <LeadScoringSection />
       <UseCasesSection />
       <KnowledgeBaseSection />
-      <LeadScoringSection />
       <PricingSection />
       <CtaSection />
       <SiteFooter />
+
+      <Script id="nexus-widget" strategy="afterInteractive">{`
+        (function () {
+          var iframeId = "mindware-nexus-widget-nxbot_1957644b814ddb7ac1d5";
+          var buttonId = iframeId + "-launcher";
+          var panelOpen = false;
+          var iframe = document.createElement("iframe");
+          iframe.id = iframeId;
+          iframe.src = "http://localhost:3000/widget/nxbot_1957644b814ddb7ac1d5?embedded=1";
+          iframe.style.position = "fixed";
+          iframe.style.bottom = "88px";
+          iframe.style.right = "24px";
+          iframe.style.width = "380px";
+          iframe.style.maxWidth = "calc(100vw - 32px)";
+          iframe.style.height = "620px";
+          iframe.style.maxHeight = "calc(100vh - 112px)";
+          iframe.style.border = "0";
+          iframe.style.borderRadius = "24px";
+          iframe.style.boxShadow = "0 24px 64px rgba(0,0,0,0.22)";
+          iframe.style.display = "none";
+          iframe.style.zIndex = "999998";
+          iframe.setAttribute("title", "Chat de Asistente Nexus");
+
+          var button = document.createElement("button");
+          button.id = buttonId;
+          button.type = "button";
+          button.textContent = "Abrir chat";
+          button.style.position = "fixed";
+          button.style.bottom = "24px";
+          button.style.right = "24px";
+          button.style.zIndex = "999999";
+          button.style.border = "0";
+          button.style.borderRadius = "999px";
+          button.style.padding = "14px 18px";
+          button.style.background = "#6D28D9";
+          button.style.color = "#FFFFFF";
+          button.style.font = "600 14px system-ui, sans-serif";
+          button.style.boxShadow = "0 12px 30px rgba(0,0,0,0.18)";
+          button.style.cursor = "pointer";
+
+          button.addEventListener("click", function () {
+            panelOpen = !panelOpen;
+            iframe.style.display = panelOpen ? "block" : "none";
+          });
+
+          document.body.appendChild(iframe);
+          document.body.appendChild(button);
+        })();
+      `}</Script>
     </div>
   )
 }

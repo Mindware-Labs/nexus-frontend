@@ -7,7 +7,17 @@ export type BotActionState =
   | { status: 'error'; message: string }
   | { status: 'success' }
 
+export interface BotSummary {
+  id: number
+  name: string
+  clientId: string
+  isBotActive: boolean
+  widgetUrl: string
+}
+
 export interface BotConfig {
+  botId: number
+  botName: string
   customerId: number
   customerName: string
   customerEmail: string
@@ -57,8 +67,40 @@ function extractMessage(err: unknown): string {
   return 'Error desconocido'
 }
 
-export async function getBotConfig(customerId: number): Promise<BotConfig> {
-  const res = await backendFetch(`/bot/customers/${customerId}/config`)
+export async function listBots(customerId: number): Promise<BotSummary[]> {
+  const res = await backendFetch(`/bot/customers/${customerId}/bots`)
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(extractMessage(err))
+  }
+  return res.json() as Promise<BotSummary[]>
+}
+
+export async function createBotAction(customerId: number, name: string): Promise<BotActionState> {
+  const res = await backendFetch(`/bot/customers/${customerId}/bots`, {
+    method: 'POST',
+    body: JSON.stringify({ name }),
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    return { status: 'error', message: extractMessage(err) }
+  }
+  revalidatePath(`/dashboard/bots/${customerId}`)
+  return { status: 'success' }
+}
+
+export async function deleteBotAction(customerId: number, botId: number): Promise<BotActionState> {
+  const res = await backendFetch(`/bot/customers/${customerId}/bots/${botId}`, { method: 'DELETE' })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    return { status: 'error', message: extractMessage(err) }
+  }
+  revalidatePath(`/dashboard/bots/${customerId}`)
+  return { status: 'success' }
+}
+
+export async function getBotConfig(customerId: number, botId: number): Promise<BotConfig> {
+  const res = await backendFetch(`/bot/customers/${customerId}/bots/${botId}/config`)
   if (!res.ok) {
     const err = await res.json().catch(() => ({}))
     throw new Error(extractMessage(err))
@@ -68,9 +110,10 @@ export async function getBotConfig(customerId: number): Promise<BotConfig> {
 
 export async function updateBotConfigAction(
   customerId: number,
-  payload: Omit<BotConfig, 'customerId' | 'customerName' | 'customerEmail' | 'tenantName' | 'tenantSlug' | 'isCustomerActive' | 'isTenantActive' | 'clientId' | 'isBotActive' | 'snippet' | 'widgetUrl'>,
+  botId: number,
+  payload: Omit<BotConfig, 'botId' | 'botName' | 'customerId' | 'customerName' | 'customerEmail' | 'tenantName' | 'tenantSlug' | 'isCustomerActive' | 'isTenantActive' | 'clientId' | 'isBotActive' | 'snippet' | 'widgetUrl'>,
 ): Promise<BotActionState> {
-  const res = await backendFetch(`/bot/customers/${customerId}/config`, {
+  const res = await backendFetch(`/bot/customers/${customerId}/bots/${botId}/config`, {
     method: 'PUT',
     body: JSON.stringify(payload),
   })
@@ -80,16 +123,17 @@ export async function updateBotConfigAction(
     return { status: 'error', message: extractMessage(err) }
   }
 
-  revalidatePath(`/dashboard/bots/${customerId}`)
+  revalidatePath(`/dashboard/bots/${customerId}/${botId}`)
   return { status: 'success' }
 }
 
 export async function previewBotChatAction(
   customerId: number,
+  botId: number,
   message: string,
   history: { role: 'user' | 'bot'; text: string }[],
 ): Promise<{ reply: string; assistantName: string } | { error: string }> {
-  const res = await backendFetch(`/bot/customers/${customerId}/preview-chat`, {
+  const res = await backendFetch(`/bot/customers/${customerId}/bots/${botId}/preview-chat`, {
     method: 'POST',
     body: JSON.stringify({ message, history }),
   })
@@ -102,9 +146,10 @@ export async function previewBotChatAction(
 
 export async function toggleBotActiveAction(
   customerId: number,
+  botId: number,
   active: boolean,
 ): Promise<BotActionState> {
-  const res = await backendFetch(`/bot/customers/${customerId}/toggle?active=${active}`, {
+  const res = await backendFetch(`/bot/customers/${customerId}/bots/${botId}/toggle?active=${active}`, {
     method: 'PATCH',
   })
 
@@ -113,6 +158,6 @@ export async function toggleBotActiveAction(
     return { status: 'error', message: extractMessage(err) }
   }
 
-  revalidatePath(`/dashboard/bots/${customerId}`)
+  revalidatePath(`/dashboard/bots/${customerId}/${botId}`)
   return { status: 'success' }
 }
