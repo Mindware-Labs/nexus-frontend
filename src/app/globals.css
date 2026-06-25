@@ -587,3 +587,131 @@
   scrollbar-width: thin;
   scrollbar-color: rgba(173, 116, 195, 0.5) transparent;
 }
+/* ── Nexus Panel: Design Tokens — paleta oficial Mindware Nexus ──────── */
+/*
+  Fuente: design.md §3
+  --purple-deep:    #3D1A4E   → nx-accent-2, sidebar bg
+  --purple-primary: #522566   → nx-accent, botones, activos
+  --lavender:       #AD74C3   → nx-text-3, sidebar-text-2, acento oscuro
+  --lilac-light:    #F8EDFB   → nx-bg, nx-accent-soft
+  --mint-green:     #34D399   → nx-positive
+  --coral:          #FB7185   → nx-high, alertas
+  --charcoal:       #111827   → nx-text
+  --white:          #FFFFFF   → nx-surface
+*/
+[data-nexus-theme] {
+  /* Surfaces */
+  --nx-bg:        #F8EDFB; /* lilac-light */
+  --nx-surface:   #FFFFFF; /* white */
+  --nx-surface-2: #F3E4F7;
+  /* Borders */
+  --nx-border:    #E8D5F2;
+  --nx-border-2:  #F0E4F8;
+  /* Text */
+  --nx-text:      #111827; /* charcoal */
+  --nx-text-2:    #5A3570;
+  --nx-text-3:    #AD74C3; /* lavender */
+  /* Brand accent */
+  --nx-accent:      #522566; /* purple-primary */
+  --nx-accent-2:    #3D1A4E; /* purple-deep */
+  --nx-accent-soft: #F8EDFB; /* lilac-light */
+  /* States */
+  --nx-positive:      #34D399; /* mint-green */
+  --nx-positive-soft: #D1FAF0;
+  --nx-high:          #FB7185; /* coral */
+  --nx-high-soft:     #FFE4E8;
+  --nx-low:           #6B7280;
+  --nx-low-soft:      #F3F4F6;
+  /* Sidebar (dark purple) */
+  --nx-sidebar-grad:   linear-gradient(180deg, #3D1A4E 0%, #2D1239 100%);
+  --nx-sidebar-text:   #F8EDFB; /* lilac-light como texto */
+  --nx-sidebar-text-2: #AD74C3; /* lavender */
+  --nx-sidebar-active: #522566; /* purple-primary */
+  --nx-sidebar-border: #4A2060;
+  --nx-shadow: 0 1px 2px rgba(82,37,102,.06), 0 2px 8px rgba(82,37,102,.05);
+}
+[data-nexus-theme="dark"] {
+  --nx-bg:        #0f0f10;
+  --nx-surface:   #1a1a1d;
+  --nx-surface-2: #222226;
+  --nx-border:    #2e2e33;
+  --nx-border-2:  #252529;
+  --nx-text:      #f0f0f2;
+  --nx-text-2:    #9b9ba8;
+  --nx-text-3:    #6b6b78;
+  --nx-accent:      #b07fd4;
+  --nx-accent-2:    #9160b8;
+  --nx-accent-soft: #2a1f32;
+  --nx-positive:      #34D399;
+  --nx-positive-soft: #0d2a1e;
+  --nx-high:          #FB7185;
+  --nx-high-soft:     #2e1219;
+  --nx-low:           #6b6b78;
+  --nx-low-soft:      #1e1e22;
+  --nx-sidebar-grad:   linear-gradient(180deg, #1a1a1d 0%, #141416 100%);
+  --nx-sidebar-text:   #d0d0d8;
+  --nx-sidebar-text-2: #6b6b78;
+  --nx-sidebar-active: #2a1f32;
+  --nx-sidebar-border: #2e2e33;
+  --nx-shadow: 0 1px 2px rgba(0,0,0,.6);
+}
+/* ── Theme transitions ───────────────────────────────────────────────── */
+@media (prefers-reduced-motion: no-preference) {
+  [data-nexus-theme] :is(div, header, aside, nav, section, main, p, span, h1, h2, h3, h4, button, a, input, label, footer) {
+    transition:
+      background-color 0.25s ease,
+      border-color     0.25s ease,
+      color            0.2s  ease,
+      box-shadow       0.25s ease;
+  }
+}
+
+/* ── Premium card ────────────────────────────────────────────────────── */
+.nx-card {
+  background:    var(--nx-surface);
+  border:        1px solid var(--nx-border);
+  border-radius: 1rem;
+  box-shadow:
+    0 0 0 0.5px rgba(0,0,0,.04),
+    0 1px 3px   rgba(0,0,0,.04),
+    0 6px 16px  rgba(82,37,102,.05),
+    inset 0 1px 0 rgba(255,255,255,.80);
+  transition: box-shadow 0.22s ease, transform 0.22s ease,
+              background-color 0.25s ease, border-color 0.25s ease;
+}
+.nx-card:hover {
+  box-shadow:
+    0 0 0 0.5px rgba(82,37,102,.08),
+    0 2px 6px   rgba(0,0,0,.06),
+    0 12px 28px rgba(82,37,102,.09),
+    inset 0 1px 0 rgba(255,255,255,.90);
+  transform: translateY(-1px);
+}
+[data-nexus-theme="dark"] .nx-card {
+  box-shadow:
+    0 0 0 0.5px rgba(255,255,255,.04),
+    0 1px 3px   rgba(0,0,0,.30),
+    0 6px 16px  rgba(0,0,0,.22),
+    inset 0 1px 0 rgba(255,255,255,.04);
+}
+[data-nexus-theme="dark"] .nx-card:hover {
+  box-shadow:
+    0 0 0 0.5px rgba(255,255,255,.06),
+    0 2px 6px   rgba(0,0,0,.40),
+    0 12px 28px rgba(0,0,0,.32),
+    inset 0 1px 0 rgba(255,255,255,.06);
+  transform: translateY(-1px);
+}
+
+/* Panel sidebar — white surface, purple accents */
+[data-nexus-theme] [data-sidebar="sidebar"] {
+  background: #FFFFFF !important;
+  border-right: 1px solid var(--nx-border) !important;
+}
+[data-nexus-theme="dark"] [data-sidebar="sidebar"] {
+  background: #141416 !important;
+  border-right: 1px solid #2e2e33 !important;
+}
+[data-nexus-theme] [data-sidebar="rail"] {
+  display: none !important;
+}

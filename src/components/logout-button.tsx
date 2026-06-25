@@ -1,10 +1,14 @@
 "use client"
 
+import type { ComponentProps } from "react"
 import { useTransition } from "react"
 import { LogOut } from "lucide-react"
 import { logoutAction } from "@/app/actions/auth"
+import { cn } from "@/lib/utils"
 
-export function LogoutButton() {
+type LogoutButtonProps = ComponentProps<"button">
+
+export function LogoutButton({ className, ...props }: LogoutButtonProps) {
   const [isPending, start] = useTransition()
 
   return (
@@ -12,10 +16,14 @@ export function LogoutButton() {
       type="button"
       disabled={isPending}
       onClick={() => start(() => logoutAction())}
-      className="flex w-full items-center gap-2 text-muted-foreground hover:text-destructive transition-colors disabled:opacity-50"
+      className={cn(
+        "flex w-full items-center gap-2 text-muted-foreground transition-colors disabled:opacity-50",
+        className
+      )}
+      {...props}
     >
       <LogOut className="size-4" />
-      <span>{isPending ? "Cerrando…" : "Cerrar sesión"}</span>
+      <span>{isPending ? "Cerrando..." : "Cerrar sesion"}</span>
     </button>
   )
 }

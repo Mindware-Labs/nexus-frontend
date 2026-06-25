@@ -1,10 +1,11 @@
 'use client'
 
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useRef, useState, useCallback } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Mail, Lock, Eye, EyeOff, ArrowRight, TriangleAlert } from 'lucide-react'
+import { Mail, Lock, Eye, EyeOff, ArrowRight, TriangleAlert, Info } from 'lucide-react'
+import { BRAND_LOGO_ALT, BRAND_LOGO_SRC } from '@/lib/brand'
 import { cn } from '@/lib/utils'
 
 const FONT     = "'Hanken Grotesk', system-ui, sans-serif"
@@ -28,21 +29,24 @@ type BorderBeam = {
 }
 
 /* ── Field input ────────────────────────────────────────────────────── */
-function FieldInput({ className, ...props }: React.ComponentProps<'input'>) {
-  return (
-    <input
-      className={cn(
-        'flex h-11 w-full rounded-xl border-2 border-[#E5D5F0] bg-[#FDFAFF] px-3 text-sm text-[#111827]',
-        'placeholder:text-[#9CA3AF] outline-none transition-all duration-200',
-        'focus:border-[#AD74C3] focus:bg-white focus:shadow-[0_0_0_4px_rgba(173,116,195,0.12)]',
-        'disabled:opacity-50 disabled:cursor-not-allowed',
-        className,
-      )}
-      style={{ fontFamily: FONT }}
-      {...props}
-    />
-  )
-}
+const FieldInput = React.forwardRef<HTMLInputElement, React.ComponentProps<'input'>>(
+  function FieldInput({ className, ...props }, ref) {
+    return (
+      <input
+        ref={ref}
+        className={cn(
+          'flex h-11 w-full rounded-xl border-2 border-[#E5D5F0] bg-[#FDFAFF] px-3 text-sm text-[#111827]',
+          'placeholder:text-[#9CA3AF] outline-none transition-all duration-200',
+          'focus:border-[#AD74C3] focus:bg-white focus:shadow-[0_0_0_4px_rgba(173,116,195,0.12)]',
+          'disabled:opacity-50 disabled:cursor-not-allowed',
+          className,
+        )}
+        style={{ fontFamily: FONT }}
+        {...props}
+      />
+    )
+  }
+)
 
 /* ── Purple border beams ────────────────────────────────────────────── */
 function BorderBeams() {
@@ -71,10 +75,7 @@ function BorderBeams() {
               filter: 'blur(1.5px)',
             }}
             animate={{ [b.axis]: [b.from, b.to], opacity: [0, 0.9, 0] }}
-            transition={{
-              [b.axis]: { duration: 2.5, ease: 'easeInOut', repeat: Infinity, repeatDelay: 1.2, delay: b.delay },
-              opacity:   { duration: 2.5, ease: 'easeInOut', repeat: Infinity, repeatDelay: 1.2, delay: b.delay },
-            }}
+            transition={{ duration: 2.5, ease: 'easeInOut', repeat: Infinity, repeatDelay: 1.2, delay: b.delay }}
           />
         )
       })}
@@ -149,15 +150,36 @@ export function SignInCard2({
   signUpHref,
 }: SignInCard2Props) {
   const [showPassword, setShowPassword] = useState(false)
-  const [email,        setEmail]        = useState('')
+  const [email,        setEmail]        = useState(() => {
+    try { return localStorage.getItem('nx_remembered_email') ?? '' } catch { return '' }
+  })
   const [password,     setPassword]     = useState('')
-  const [rememberMe,   setRememberMe]   = useState(false)
+  const [rememberMe,   setRememberMe]   = useState(() => {
+    try { return !!localStorage.getItem('nx_remembered_email') } catch { return false }
+  })
   const [focused,      setFocused]      = useState<string | null>(null)
-  const cardRef = useRef<HTMLDivElement>(null)
-  const capsOn  = useCapsLock()
+  const emailRef = useRef<HTMLInputElement>(null)
+  const cardRef  = useRef<HTMLDivElement>(null)
+  const capsOn   = useCapsLock()
+
+  useEffect(() => { emailRef.current?.focus() }, [])
+
+  const handleToggleRemember = useCallback(() => {
+    setRememberMe(v => {
+      if (v) {
+        try { localStorage.removeItem('nx_remembered_email') } catch {}
+      }
+      return !v
+    })
+  }, [])
 
   async function handleSubmit(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault()
+    if (rememberMe) {
+      try { localStorage.setItem('nx_remembered_email', email) } catch {}
+    } else {
+      try { localStorage.removeItem('nx_remembered_email') } catch {}
+    }
     await onSubmit(email, password, rememberMe)
   }
 
@@ -196,8 +218,8 @@ export function SignInCard2({
                 className="mx-auto mb-5 flex h-[72px] w-full max-w-[260px] items-center justify-center"
               >
                 <Image
-                  src="/LogosMWL/dark_logo_transparent_background.png"
-                  alt="Logo de Mindware Nexus"
+                  src={BRAND_LOGO_SRC}
+                  alt={BRAND_LOGO_ALT}
                   width={260}
                   height={72}
                   priority
@@ -261,6 +283,7 @@ export function SignInCard2({
                     style={{ color: focused === 'email' ? LAVENDER : '#9CA3AF' }}
                   />
                   <FieldInput
+                    ref={emailRef}
                     type="email"
                     placeholder="Email"
                     value={email}
@@ -345,7 +368,7 @@ export function SignInCard2({
                     <input
                       type="checkbox"
                       checked={rememberMe}
-                      onChange={() => setRememberMe(v => !v)}
+                      onChange={handleToggleRemember}
                       className="appearance-none size-4 rounded border-2 border-[#D1B8E8] bg-white transition-all duration-200 cursor-pointer focus:outline-none"
                       style={rememberMe ? { background: PURPLE, borderColor: PURPLE } : {}}
                     />
@@ -368,6 +391,13 @@ export function SignInCard2({
                     </AnimatePresence>
                   </div>
                   <span className="text-xs font-medium" style={{ fontFamily: FONT, color: '#6B7280' }}>Recordarme</span>
+                  <span
+                    title="Mantiene tu sesión activa por 30 días. En dispositivos compartidos, usa sin esta opción."
+                    className="cursor-help"
+                    style={{ color: '#9CA3AF' }}
+                  >
+                    <Info className="size-3" />
+                  </span>
                 </label>
 
                 <Link

@@ -11,7 +11,7 @@ import { cn } from '@/lib/utils'
 
 const FONT = "'Hanken Grotesk', system-ui, sans-serif"
 const RL_KEY      = 'nx_rl_expires'
-const BLOCKED_KEY = 'nx_acc_blocked'
+export const BLOCKED_KEY = 'nx_acc_blocked'
 
 /* ── Background: white limpio ───────────────────────────────────────── */
 function Background() {
@@ -34,6 +34,7 @@ function RateLimitBanner({ seconds }: { seconds: number }) {
 /* ── 2-FA step ─────────────────────────────────────────────────────── */
 function TwoFactorStep({
   preAuthToken,
+  rememberMe,
   formAction,
   state,
   isPending,
@@ -42,6 +43,7 @@ function TwoFactorStep({
   onBack,
 }: {
   preAuthToken: string
+  rememberMe: boolean
   formAction: (fd: FormData) => void
   state: ActionState
   isPending: boolean
@@ -91,6 +93,7 @@ function TwoFactorStep({
 
         <form onSubmit={handleSubmit} className="space-y-3 mt-4">
           <input type="hidden" name="preAuthToken" value={preAuthToken} />
+          <input type="hidden" name="rememberMe" value={String(rememberMe)} />
           <input
             name="code"
             type="text"
@@ -200,12 +203,13 @@ export default function LoginPage() {
   const cardError = blockedMsg
     ?? (loginState.status === 'error' ? loginState.message : undefined)
 
-  /* adapter: SignInCard2 calls onSubmit(email, password) */
-  async function handleCardSubmit(email: string, password: string) {
+  /* adapter: SignInCard2 calls onSubmit(email, password, rememberMe) */
+  async function handleCardSubmit(email: string, password: string, rememberMe: boolean) {
     if (isBlocked || isRateLimited) return
     const fd = new FormData()
     fd.set('email', email)
     fd.set('password', password)
+    fd.set('rememberMe', String(rememberMe))
 
     const r = LoginSchema.safeParse({ email, password })
     if (!r.success) return   // card's native HTML validation already catches this
@@ -228,7 +232,8 @@ export default function LoginPage() {
         {show2FA ? (
           <TwoFactorStep
             key="2fa"
-            preAuthToken={(loginState as { status: 'two_factor'; preAuthToken: string }).preAuthToken}
+            preAuthToken={(loginState as { status: 'two_factor'; preAuthToken: string; rememberMe: boolean }).preAuthToken}
+            rememberMe={(loginState as { status: 'two_factor'; preAuthToken: string; rememberMe: boolean }).rememberMe}
             formAction={twoFAFormAction}
             state={twoFAState}
             isPending={is2FAPending}

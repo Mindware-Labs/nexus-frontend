@@ -10,7 +10,7 @@ export type ActionState =
   | { status: 'idle' }
   | { status: 'error'; message: string }
   | { status: 'rate_limited'; retryAfterSeconds: number }
-  | { status: 'two_factor'; preAuthToken: string }
+  | { status: 'two_factor'; preAuthToken: string; rememberMe: boolean }
   | { status: 'success' }
   | { status: 'blocked'; message: string };
 
@@ -37,6 +37,8 @@ export async function loginAction(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
+  const rememberMe = formData.get('rememberMe') === 'true';
+
   const parsed = LoginSchema.safeParse({
     email: formData.get('email'),
     password: formData.get('password'),
@@ -71,10 +73,10 @@ export async function loginAction(
   }
 
   if ('twoFactorRequired' in body) {
-    return { status: 'two_factor', preAuthToken: body.preAuthToken };
+    return { status: 'two_factor', preAuthToken: body.preAuthToken, rememberMe };
   }
 
-  await createSession(body as TokenPair);
+  await createSession(body as TokenPair, rememberMe);
   redirect((body as TokenPair).role === 'owner' ? '/dashboard' : '/panel');
 }
 
@@ -82,6 +84,8 @@ export async function verify2FAAction(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
+  const rememberMe = formData.get('rememberMe') === 'true';
+
   const parsed = TwoFASchema.safeParse({
     preAuthToken: formData.get('preAuthToken'),
     code: formData.get('code'),
@@ -111,7 +115,7 @@ export async function verify2FAAction(
     return { status: 'error', message: extractMessage(body, 'Código 2FA inválido') };
   }
 
-  await createSession(body);
+  await createSession(body, rememberMe);
   redirect(body.role === 'owner' ? '/dashboard' : '/panel');
 }
 

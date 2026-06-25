@@ -17,16 +17,18 @@ const BASE_OPTS = {
   maxAge: THIRTY_DAYS,
 };
 
-export async function createSession(data: TokenPair): Promise<void> {
+export async function createSession(data: TokenPair, rememberMe = false): Promise<void> {
   const jar = await cookies();
   const { id, name, email, role, tenantId } = data;
 
-  jar.set(TOKEN_COOKIE, data.refreshToken, BASE_OPTS);
+  const persistOpts = rememberMe ? BASE_OPTS : { ...BASE_OPTS, maxAge: undefined };
+
+  jar.set(TOKEN_COOKIE, data.refreshToken, persistOpts);
   jar.set(ACCESS_COOKIE, data.accessToken, { ...BASE_OPTS, maxAge: EIGHT_HOURS });
   jar.set(
     USER_COOKIE,
     Buffer.from(JSON.stringify({ id, name, email, role, tenantId })).toString('base64'),
-    BASE_OPTS,
+    persistOpts,
   );
 }
 

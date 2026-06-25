@@ -1,11 +1,18 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono, Inter } from "next/font/google";
+import { Geist, Geist_Mono, Inter, Hanken_Grotesk } from "next/font/google";
 import { preload } from "react-dom";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 
 const inter = Inter({subsets:['latin'],variable:'--font-sans'});
+
+const hanken = Hanken_Grotesk({
+  subsets: ['latin'],
+  variable: '--font-hanken',
+  weight: ['400', '600', '700'],
+  preload: false,
+});
 
 
 /* Tipografía oficial: Switzer (diseño.md §2), servida desde /public/fonts
@@ -63,7 +70,7 @@ export default function RootLayout({
   return (
     <html
       lang="es"
-      className={cn("h-full", "antialiased", geistSans.variable, geistMono.variable, "font-sans", inter.variable)}
+      className={cn("h-full", "antialiased", geistSans.variable, geistMono.variable, "font-sans", inter.variable, hanken.variable)}
     >
       <head>
         {/* General Sans (Fontshare) — titulares del hero de la landing.
